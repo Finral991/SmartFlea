@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Admin</title>
+  <link href="https://getbootstrap.com/docs/4.4/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('/images/R.jpg');
+      background-size: cover;
+      color: white;
+    }
+    .container {
+      background-color: rgba(0,0,0,0.7);
+      margin-top: 100px;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    table {
+      background-color: white;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Subscribers</h1>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="subscribersTable"></tbody>
+    </table>
+    <a href="login.html" class="btn btn-warning">Sign Out</a>
+  </div>
+
+  <script>
+    if (localStorage.getItem('authorized') !== 'true') {
+  window.location.href = 'login.html';
+}
+
+const users = JSON.parse(localStorage.getItem('users') || '[]');
+const tbody = document.getElementById('subscribersTable');
+users.forEach((user, i) => {
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${i + 1}</td>
+    <td>${user.email}</td>
+    <td>••••••</td>
+  `;
+  tbody.appendChild(row);
+});
+
+  </script>
+</body>
+</html>

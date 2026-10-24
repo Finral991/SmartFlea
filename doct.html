@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Галерея</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f2f2f2;
+    }
+
+    .gallery-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-image: url('images/R.jpg');
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+
+    .gallery-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transition: transform 0.3s ease;
+      border: 2px solid #ff9800;
+      border-radius: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .gallery-prev,
+    .gallery-next {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 55px;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .gallery-prev:hover,
+    .gallery-next:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    .gallery-prev {
+      left: 20px;
+    }
+
+    .gallery-next {
+      right: 20px;
+    }
+
+    .back-button {
+      display: inline-block;
+  padding: 10px 20px;
+  font-size: 20px;
+  background-color: #ff9800;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+
+    .back-button:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <div class="gallery-container">
+    <img class="gallery-image" src="images/E11.jpg" alt="Photo 1">
+    <div class="gallery-prev">&lt;</div>
+    <div class="gallery-next">&gt;</div>
+    <a href="index.html" class="back-button">Go Back to Previous Page</a>
+  </div>
+
+  <script>
+    const images = [
+      'images/E3.jpg',
+      'images/E2.jpg',
+      'images/E12.jpg',
+      'images/E4.jpg',
+      'images/E5.jpg',
+      'images/E6.jpg',
+      'images/E11.jpg',
+      'images/E8.jpg',
+      'images/E9.jpg',
+      'images/E10.jpg'
+    ];
+
+    let currentImageIndex = 0;
+    const imageElement = document.querySelector('.gallery-image');
+    const prevButton = document.querySelector('.gallery-prev');
+    const nextButton = document.querySelector('.gallery-next');
+
+    function showImage(index) {
+      const imageUrl = images[index];
+      imageElement.src = imageUrl;
+    }
+
+    function showPrevImage() {
+      currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+      showImage(currentImageIndex);
+    }
+
+    function showNextImage() {
+      currentImageIndex = (currentImageIndex + 1) % images.length;
+      showImage(currentImageIndex);
+    }
+
+    prevButton.addEventListener('click', showPrevImage);
+    nextButton.addEventListener('click', showNextImage);
+
+    function goBack() {
+      window.location.href = ".";
+    }
+
+    // Show initial image
+    showImage(currentImageIndex);
+  </script>
+</body>
+</html>

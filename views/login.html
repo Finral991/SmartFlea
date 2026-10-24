@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Login</title>
+  <link href="https://getbootstrap.com/docs/4.4/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('/images/R.jpg');
+      background-size: cover;
+    }
+    .container {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 20px;
+      background-color: rgba(0,0,0,0.7);
+      border-radius: 10px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sign In</h1>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Login</label>
+        <input type="text" class="form-control" id="login" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" class="form-control" id="password" required>
+      </div>
+      <button type="submit" class="btn btn-warning">Sign In</button>
+    </form>
+    <div class="mt-3">
+      <a href="../index.html" class="btn btn-light">Go Back to Previous Page</a>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_LOGIN = 'admin';
+    const ADMIN_PASSWORD = 'admin';
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const email = document.getElementById('login').value;
+  const password = document.getElementById('password').value;
+
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+
+  const userExists = users.some(user => user.email === email && user.password === password);
+
+  if (userExists) {
+    localStorage.setItem("authorized", "true");
+    window.location.href = 'admin.html'; // змінив на .html
+  } else {
+    alert("Invalid credentials");
+  }
+});
+
+  </script>
+</body>
+</html>
