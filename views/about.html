@@ -1,0 +1,119 @@
+<<<<<<< HEAD
+<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VeilSide — Chats</title><style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#000 url('../images/RSP.gif') repeat;color:#fff;font:15px Arial,sans-serif}.app{width:min(96vw,1240px);min-height:100vh;margin:auto;padding:14px;background:rgba(0,0,0,.94);border-left:2px solid #fff;border-right:2px solid #fff}.header{display:flex;align-items:center;gap:10px;padding:5px 9px;border:2px solid #fff}.brand{display:flex;align-items:center;gap:7px;color:#fff;text-decoration:none;font-weight:bold}.brand img{width:47px;height:35px;object-fit:cover}nav{margin-left:auto;display:flex;gap:18px;align-items:center}nav a{color:#fff;text-decoration:none;font-size:12px;font-weight:bold}.title{text-align:center;font-size:20px;margin:16px 0}.layout{display:grid;grid-template-columns:330px 1fr;gap:13px}.panel,.dialog{border:2px solid #fff;background:#080808}.list-head{display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:2px solid #fff}.list{display:grid;gap:8px;padding:9px;max-height:650px;overflow:auto}.person{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:1px solid #888;background:#151515;color:#fff;text-align:left;cursor:pointer}.person:hover,.person.active{outline:2px solid #a8d9d3}.avatar{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#ddd;color:#111;font-size:18px;font-weight:bold}.avatar img{width:100%;height:100%;object-fit:cover}.person strong,.person small{display:block}.person small{margin-top:4px;color:#cfcfcf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.online{color:#b9e2de!important}.dialog[hidden]{display:none}.empty{display:grid;place-items:center;min-height:500px;color:#bbb;text-align:center;padding:20px}.dialog-header{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:2px solid #fff}.dialog-header .avatar{width:42px;height:42px;flex-basis:42px}.messages{display:flex;flex-direction:column;gap:10px;height:460px;overflow:auto;padding:13px}.message{max-width:72%;padding:8px 10px;border-radius:9px;line-height:1.35}.incoming{align-self:flex-start;background:#404040}.outgoing{align-self:flex-end;background:#7d9995;color:#111}.time{display:block;margin-top:4px;font-size:10px;opacity:.72;text-align:right}.attachment{display:block;margin-top:5px;color:inherit;font-weight:bold;text-decoration:underline}.message img{display:block;max-width:100%;max-height:190px;margin-top:7px}.compose{display:grid;grid-template-columns:30px 1fr auto;gap:8px;padding:9px;border-top:2px solid #fff}.compose input[type=text]{width:100%;min-width:0;border:1px solid #fff;border-radius:17px;background:#666;color:#fff;padding:8px 12px;font:inherit}.round,.send{border:1px solid #fff;background:#777;color:#fff;cursor:pointer}.round{width:30px;height:30px;border-radius:50%;font-size:18px}.send{border-radius:16px;padding:0 14px}.file{display:none}.ready{grid-column:2/-1;color:#b9e2de;font-size:11px}.button{padding:5px 9px;border:1px solid #fff;border-radius:13px;background:#777;color:#fff;font-weight:bold;cursor:pointer}.group-picker{display:none;padding:10px;border-bottom:1px solid #777}.group-picker.show{display:block}.group-picker label{display:block;margin:5px}.group-picker input{margin-right:7px}@media(max-width:750px){.app{width:100%;border:0;padding:8px}.layout{grid-template-columns:1fr}.panel{max-height:240px}.list{max-height:170px}.messages{height:360px}nav{gap:8px}nav a{font-size:9px}}
+</style></head><body><div class="app"><header class="header"><a class="brand" href="../index.html"><img src="../images/logo.jpg">VEILSIDE</a><nav><a href="../index.html">HOME</a><a href="../doct.html">RECOMMENDED</a><a href="profile.html">PROFILE</a><span data-account-nav><a href="login.html">LOG IN</a></span></nav></header><h1 class="title">CHATS</h1><main class="layout"><aside class="panel"><div class="list-head"><strong>PEOPLE</strong><button id="new-group" class="button">+ GROUP</button></div><div id="group-picker" class="group-picker"><strong>New group</strong><div id="group-members"></div><button id="create-group" class="button">Create group</button></div><div id="people" class="list"></div></aside><section id="empty" class="dialog empty">Choose a person to start a real-time conversation.</section><section id="dialog" class="dialog" hidden><header id="dialog-header" class="dialog-header"></header><div id="messages" class="messages"></div><form id="compose" class="compose"><input id="file" class="file" type="file" accept="image/*,.pdf,.doc,.docx"><button id="attach" class="round" type="button">+</button><input id="text" type="text" maxlength="1000" placeholder="Write a message…"><button class="send">Send</button><span id="ready" class="ready" hidden></span></form></section></main></div><script type="module">import {auth,db,storage,doc,getDoc,setDoc,updateDoc,serverTimestamp,onAuthStateChanged,collection,addDoc,getDocs,query,orderBy,onSnapshot,ref,uploadBytes,getDownloadURL} from '../firebase.js';import {attachAccountNav} from '../account-nav.js';attachAccountNav('../');const $=s=>document.querySelector(s),esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));let me,meProfile,users=[],active=null,unsubscribe,file=null;const avatar=u=>`<span class="avatar">${u.avatarUrl?`<img src="${u.avatarUrl}">`:esc((u.name||u.fullName||'?')[0])}</span>`;const chatId=ids=>ids.slice().sort().join('_');onAuthStateChanged(auth,async user=>{if(!user){location.href='login.html';return}me=user;const snap=await getDoc(doc(db,'users',user.uid));meProfile=snap.data();await updateDoc(doc(db,'users',user.uid),{online:true,lastSeen:serverTimestamp()});loadUsers()});async function loadUsers(){const snap=await getDocs(collection(db,'users'));users=snap.docs.filter(d=>d.id!==me.uid).map(d=>({id:d.id,...d.data()}));renderPeople()}function renderPeople(){const list=$('#people');list.innerHTML=users.map(u=>`<button class="person ${active?.id===u.id?'active':''}" data-user="${u.id}">${avatar(u)}<span><strong>${esc(u.name||u.fullName)}</strong><small class="${u.online?'online':''}">${u.online?'online':u.lastSeen?.toDate?`last seen ${u.lastSeen.toDate().toLocaleString()}`:'last seen recently'}</small></span></button>`).join('')||'<small>No other registered users yet.</small>';$('#group-members').innerHTML=users.map(u=>`<label><input type="checkbox" value="${u.id}"> ${esc(u.name||u.fullName)}</label>`).join('')}async function openChat(target){active=target;renderPeople();const id=target.group?target.id:chatId([me.uid,target.id]);if(!target.group)await setDoc(doc(db,'chats',id),{members:[me.uid,target.id],type:'direct',updatedAt:serverTimestamp()},{merge:true});$('#empty').hidden=true;$('#dialog').hidden=false;$('#dialog-header').innerHTML=`${avatar(target)}<span><strong>${esc(target.name||target.fullName)}</strong><br><small class="online">${target.group?'group chat':target.online?'online':'last seen recently'}</small></span>`;if(unsubscribe)unsubscribe();unsubscribe=onSnapshot(query(collection(db,'chats',id,'messages'),orderBy('createdAt','asc')),snap=>{const msgs=snap.docs.map(d=>d.data());$('#messages').innerHTML=msgs.map(m=>`<div class="message ${m.senderId===me.uid?'outgoing':'incoming'}">${esc(m.text||'Attachment')}${m.fileUrl?`<a class="attachment" href="${m.fileUrl}" target="_blank" download>📎 ${esc(m.fileName||'file')} — open / download</a>${m.fileType?.startsWith('image/')?`<img src="${m.fileUrl}">`:''}`:''}<span class="time">${m.createdAt?.toDate?m.createdAt.toDate().toLocaleString():'sending…'}</span></div>`).join('');$('#messages').scrollTop=$('#messages').scrollHeight})}document.addEventListener('click',e=>{const id=e.target.closest('[data-user]')?.dataset.user;if(id)openChat(users.find(u=>u.id===id))});$('#new-group').onclick=()=>$('#group-picker').classList.toggle('show');$('#create-group').onclick=async()=>{const members=[...document.querySelectorAll('#group-members input:checked')].map(x=>x.value);if(!members.length)return;const name=prompt('Group name');if(!name)return;const id=`group_${Date.now()}`;await setDoc(doc(db,'chats',id),{members:[me.uid,...members],type:'group',name,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});openChat({id,name,group:true})};$('#attach').onclick=()=>$('#file').click();$('#file').onchange=e=>{file=e.target.files[0]||null;$('#ready').hidden=!file;$('#ready').textContent=file?`Ready: ${file.name}`:''};$('#compose').onsubmit=async e=>{e.preventDefault();if(!active)return;const text=$('#text').value.trim();if(!text&&!file)return;const id=active.group?active.id:chatId([me.uid,active.id]);let fileUrl='',fileName='',fileType='';try{if(file){const path=`chat-files/${id}/${Date.now()}-${file.name}`;const r=ref(storage,path);await uploadBytes(r,file);fileUrl=await getDownloadURL(r);fileName=file.name;fileType=file.type}await addDoc(collection(db,'chats',id,'messages'),{senderId:me.uid,text,fileUrl,fileName,fileType,createdAt:serverTimestamp()});await updateDoc(doc(db,'chats',id),{updatedAt:serverTimestamp(),lastMessage:text||`📎 ${fileName}`});$('#text').value='';file=null;$('#file').value='';$('#ready').hidden=true}catch(error){alert(`Message was not sent: ${error.code||'error'}`)}};addEventListener('pagehide',()=>{if(me)updateDoc(doc(db,'users',me.uid),{online:false,lastSeen:serverTimestamp()})});</script></body></html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>About Yaroslav</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      background-image: url('/images/R.jpg');
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      background-color: #ffffff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border: 2px solid #ff9800;
+      border-radius: 10px;
+    }
+
+    .profile {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .profile img {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .profile h2 {
+      margin-top: 20px;
+      font-size: 24px;
+      color: #333333;
+    }
+
+    .profile p {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #666666;
+    }
+
+    h3 {
+      margin-top: 30px;
+      font-size: 20px;
+      color: #333333;
+    }
+
+    p, li {
+      font-size: 16px;
+      color: #666666;
+    }
+
+    ul {
+      list-style-type: disc;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 10px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #ff9800;
+      color: #ffffff;
+      font-size: 20px;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .button:hover {
+      background-color: #ffa726;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="profile">
+      <img src="/images/ava.jpg" alt="Yaroslav's Photo">
+      <h2>Yaroslav Senchyshyn</h2>
+      <p>10th-grade student at Chemerivtsi Lyceum No. 1. He is passionate about cars, sports, and living a healthy lifestyle.</p>
+    </div>
+
+    <h3>Education</h3>
+    <ul>
+      <li>Currently studying at Chemerivtsi Lyceum No. 1.</li>
+      <li>He especially enjoys physical education classes and takes an active part in school sports activities.</li>
+    </ul>
+
+    <h3>Interests</h3>
+    <ul>
+      <li>Cars – enjoys learning about different car models, their design, and performance.</li>
+      <li>Basketball – plays in his free time and loves watching games.</li>
+      <li>Football – follows his favorite teams and enjoys exciting matches.</li>
+      <li>Healthy lifestyle – stays active and takes care of his well-being.</li>
+    </ul>
+
+    <p>Energetic and motivated student who loves discovering new things. In the future, he dreams of working in a field related to technology or sports. His energy and positive attitude inspire those around him!</p>
+
+    <a href="../index.html" class="button">Go Back to Previous Page</a>
+  </div>
+</body>
+</html>
+>>>>>>> 132febc4c97488c94d9e0eacaefca2cfef479bb6

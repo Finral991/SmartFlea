@@ -1,0 +1,77 @@
+<!doctype html>
+<<<<<<< HEAD
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VeilSide — Log in</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#000 url('../images/R.jpg') repeat;color:#fff;font:14px Arial,sans-serif}.app{width:min(100%,540px);min-height:100vh;margin:auto;padding:10px;background:#000;border-left:2px solid #fff;border-right:2px solid #fff}.header{display:flex;align-items:center;gap:10px;padding:4px 8px;border:2px solid #fff}.brand{display:flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-weight:bold;font-size:12px}.brand img{width:45px;height:32px;object-fit:cover}nav{margin-left:auto;display:flex;gap:13px}nav a{color:#fff;text-decoration:none;font-size:11px;font-weight:bold}nav a:hover,nav .active{color:#b9e2de}.box{width:min(100%,290px);margin:55px auto 0;padding:15px;border:2px solid #fff}.box h1{margin:0 0 14px;font-size:17px;text-align:center}.field{display:grid;gap:4px;margin-bottom:10px;font-size:12px;font-weight:bold}.field input,.field select{width:100%;height:24px;border:2px solid #fff;border-radius:14px;background:#777;color:#fff;padding:2px 11px;font:inherit;outline:none}.field input:focus,.field select:focus{border-color:#b9e2de}.buttons{display:flex;justify-content:space-between;gap:8px;margin-top:15px}.button{padding:3px 13px;border:2px solid #fff;border-radius:14px;background:#777;color:#fff;text-decoration:none;font-weight:bold;cursor:pointer}.button:hover{background:#9a9a9a}.message{min-height:17px;margin-top:9px;color:#b9e2de;font-size:11px;text-align:center}footer{display:flex;justify-content:space-between;align-items:center;margin-top:46px;padding:7px;border:2px solid #fff;font-size:8px}footer span:last-child{font-size:17px}@media(max-width:430px){.app{border:0;padding:8px}.header{gap:6px}nav{gap:8px}nav a{font-size:9px}.brand{font-size:10px}.box{margin-top:40px}}
+body{background:#000 url('../images/RSP.gif') repeat;font-size:clamp(14px,1.1vw,17px)}.app{width:min(96vw,900px);padding:clamp(8px,1vw,15px);background:rgba(0,0,0,.94)}.box{width:min(92%,420px)}.background-control{position:fixed;right:12px;bottom:12px;z-index:10;padding:6px 9px;border:1px solid #fff;border-radius:14px;background:#111;color:#fff;font-size:10px;font-weight:bold;cursor:pointer}.background-control input{display:none}
+</style></head><body><div class="app">
+<header class="header"><a class="brand" href="../index.html"><img src="../images/logo.jpg" alt="VeilSide">VEILSIDE</a><nav><a href="../index.html">HOME</a><a href="../doct.html">RECOMMENDED</a><a href="about.html">CHATS</a><a class="active" href="login.html">LOG IN</a></nav></header>
+<main class="box"><h1>LOG IN</h1><form id="login-form"><label class="field">Username<input id="login" autocomplete="username" required></label><label class="field">Password<input id="password" type="password" autocomplete="current-password" required></label><div class="buttons"><button class="button" type="submit">Login</button><a class="button" href="register.html">I have no account</a></div><p id="message" class="message"></p></form></main>
+<footer><span>© 2026 VeilSide. All Rights Reserved.</span><span>●　◎</span></footer></div>
+<script type="module">import {auth,db,doc,getDoc,updateDoc,serverTimestamp,signInWithEmailAndPassword} from '../firebase.js';document.querySelector('#login-form').addEventListener('submit',async e=>{e.preventDefault();const login=document.querySelector('#login').value.trim().toLowerCase(),password=document.querySelector('#password').value,message=document.querySelector('#message');message.textContent='Signing in…';try{const snap=await getDoc(doc(db,'usernames',login));if(!snap.exists())throw Error('Unknown username');const credentials=await signInWithEmailAndPassword(auth,snap.data().email,password);await updateDoc(doc(db,'users',credentials.user.uid),{lastSeen:serverTimestamp(),online:true});message.textContent='You are signed in.';setTimeout(()=>location.href='../index.html',450)}catch{message.textContent='Invalid username or password.'}})</script>
+<label class="background-control">BACKGROUND<input id="background-upload" type="file" accept="image/*"></label></div><script>const backgroundFile=document.querySelector('#background-upload'),storedBackground=localStorage.getItem('veilside-background');if(storedBackground)document.body.style.backgroundImage=`url(${storedBackground})`;backgroundFile.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{localStorage.setItem('veilside-background',reader.result);document.body.style.backgroundImage=`url(${reader.result})`}catch{alert('This image is too large.')}};reader.readAsDataURL(file)}</script></body></html>
+=======
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Login</title>
+  <link href="https://getbootstrap.com/docs/4.4/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('/images/R.jpg');
+      background-size: cover;
+    }
+    .container {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 20px;
+      background-color: rgba(0,0,0,0.7);
+      border-radius: 10px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sign In</h1>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Login</label>
+        <input type="text" class="form-control" id="login" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" class="form-control" id="password" required>
+      </div>
+      <button type="submit" class="btn btn-warning">Sign In</button>
+    </form>
+    <div class="mt-3">
+      <a href="../index.html" class="btn btn-light">Go Back to Previous Page</a>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_LOGIN = 'admin';
+    const ADMIN_PASSWORD = 'admin';
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const email = document.getElementById('login').value;
+  const password = document.getElementById('password').value;
+
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+
+  const userExists = users.some(user => user.email === email && user.password === password);
+
+  if (userExists) {
+    localStorage.setItem("authorized", "true");
+    window.location.href = 'admin.html'; // змінив на .html
+  } else {
+    alert("Invalid credentials");
+  }
+});
+
+  </script>
+</body>
+</html>
+>>>>>>> 132febc4c97488c94d9e0eacaefca2cfef479bb6

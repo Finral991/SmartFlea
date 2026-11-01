@@ -1,0 +1,67 @@
+<<<<<<< HEAD
+<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VeilSide — Admin</title><style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#000 url('../images/RSP.gif') repeat;color:#fff;font:15px Arial,sans-serif}.app{width:min(96vw,1240px);min-height:100vh;margin:auto;padding:14px;background:rgba(0,0,0,.94);border-left:2px solid #fff;border-right:2px solid #fff}.header{display:flex;align-items:center;gap:10px;padding:5px 9px;border:2px solid #fff}.brand{display:flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-weight:bold}.brand img{width:47px;height:35px;object-fit:cover}nav{margin-left:auto;display:flex;gap:18px}nav a{color:#fff;text-decoration:none;font-size:12px;font-weight:bold}.notice{margin:18px 0;padding:10px;border:1px solid #b9e2de;color:#b9e2de}.layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(350px,1fr);gap:15px}.panel{padding:15px;border:2px solid #fff;background:#080808}.panel h1,.panel h2{margin:0 0 14px;font-size:20px}.field{display:grid;gap:4px;margin:9px 0;font-size:12px;font-weight:bold}.field input,.field textarea{width:100%;border:2px solid #fff;border-radius:12px;background:#666;color:#fff;padding:7px 10px;font:inherit}.field textarea{min-height:74px;resize:vertical}.button{padding:6px 12px;border:1px solid #fff;border-radius:14px;background:#777;color:#fff;font-weight:bold;cursor:pointer}.button:hover{background:#999}.danger{background:#653737}.post-list,.user-list{display:grid;gap:8px;margin-top:14px;max-height:470px;overflow:auto}.row{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;padding:9px;border:1px solid #777}.row strong,.row small{display:block}.row small{color:#ccc;margin-top:3px}.actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}.message{min-height:20px;color:#b9e2de}@media(max-width:760px){.app{width:100%;border:0;padding:8px}.layout{grid-template-columns:1fr}nav{gap:8px}nav a{font-size:9px}}
+</style></head><body><div class="app"><header class="header"><a class="brand" href="../index.html"><img src="../images/logo.jpg">VEILSIDE</a><nav><a href="../index.html">HOME</a><a href="../doct.html">RECOMMENDED</a><a href="about.html">CHATS</a><a href="profile.html">PROFILE</a></nav></header><p id="notice" class="notice">Checking administrator access…</p><main id="admin" class="layout" hidden><section class="panel"><h1>POSTS</h1><form id="post-form"><input id="post-id" type="hidden"><label class="field">Title<input id="title" required></label><label class="field">Image URL<input id="image" type="url" required placeholder="https://…"></label><label class="field">Description<textarea id="description" required></textarea></label><label class="field">Keywords — comma-separated<input id="keywords" required placeholder="phone, camera, android"></label><button class="button" type="submit">Save post</button><button id="cancel-edit" class="button" type="button" hidden>Cancel</button><p id="post-message" class="message"></p></form><div id="post-list" class="post-list"></div></section><section class="panel"><h2>USERS</h2><p class="message">Only administrators can change roles or remove users.</p><div id="user-list" class="user-list"></div></section></main></div><script type="module">import {auth,db,doc,getDoc,updateDoc,serverTimestamp,onAuthStateChanged,collection,addDoc,deleteDoc,getDocs,query,orderBy} from '../firebase.js';const $=s=>document.querySelector(s);let me,posts=[];const esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));onAuthStateChanged(auth,async user=>{if(!user){location.href='login.html';return}me=user;const mine=await getDoc(doc(db,'users',user.uid));if(!mine.exists()||mine.data().role!=='admin'){$('#notice').textContent='Access denied. This page is only for administrators.';return}$('#notice').hidden=true;$('#admin').hidden=false;loadPosts();loadUsers()});async function loadPosts(){const snap=await getDocs(query(collection(db,'posts'),orderBy('createdAt','desc')));posts=snap.docs.map(d=>({id:d.id,...d.data()}));$('#post-list').innerHTML=posts.map(p=>`<div class="row"><span><strong>${esc(p.title)}</strong><small>${esc((p.keywords||[]).join(', '))}</small></span><span class="actions"><button class="button" data-edit="${p.id}">Edit</button><button class="button danger" data-delete-post="${p.id}">Delete</button></span></div>`).join('')||'<small>No posts yet.</small>'}async function loadUsers(){const snap=await getDocs(collection(db,'users'));$('#user-list').innerHTML=snap.docs.map(d=>{const u=d.data();return `<div class="row"><span><strong>${esc(u.name||u.fullName)}</strong><small>@${esc(u.username)} · ${esc(u.role||'user')}</small></span><span class="actions">${d.id===me.uid?'':`<button class="button" data-role="${d.id}" data-next="${u.role==='admin'?'user':'admin'}">Make ${u.role==='admin'?'user':'admin'}</button><button class="button danger" data-delete-user="${d.id}">Remove</button>`}</span></div>`}).join('')}$('#post-form').onsubmit=async e=>{e.preventDefault();const id=$('#post-id').value,payload={title:$('#title').value.trim(),imageUrl:$('#image').value.trim(),description:$('#description').value.trim(),keywords:$('#keywords').value.split(',').map(k=>k.trim().toLowerCase()).filter(Boolean),updatedAt:serverTimestamp(),authorId:me.uid};try{if(id)await updateDoc(doc(db,'posts',id),payload);else await addDoc(collection(db,'posts'),{...payload,createdAt:serverTimestamp()});$('#post-form').reset();$('#post-id').value='';$('#cancel-edit').hidden=true;$('#post-message').textContent='Saved.';loadPosts()}catch(e){$('#post-message').textContent=`Could not save: ${e.code||'error'}`}};document.addEventListener('click',async e=>{const edit=e.target.dataset.edit,del=e.target.dataset.deletePost,role=e.target.dataset.role,user=e.target.dataset.deleteUser;if(edit){const p=posts.find(x=>x.id===edit);$('#post-id').value=p.id;$('#title').value=p.title;$('#image').value=p.imageUrl;$('#description').value=p.description;$('#keywords').value=(p.keywords||[]).join(', ');$('#cancel-edit').hidden=false;scrollTo({top:0,behavior:'smooth'})}if(del&&confirm('Delete this post?')){await deleteDoc(doc(db,'posts',del));loadPosts()}if(role){await updateDoc(doc(db,'users',role),{role:e.target.dataset.next,updatedAt:serverTimestamp()});loadUsers()}if(user&&confirm('Remove this user profile? Their Firebase login is not deleted.')){await deleteDoc(doc(db,'users',user));loadUsers()}});$('#cancel-edit').onclick=()=>{$('#post-form').reset();$('#post-id').value='';$('#cancel-edit').hidden=true}</script></body></html>
+````
+=======
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Admin</title>
+  <link href="https://getbootstrap.com/docs/4.4/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url('/images/R.jpg');
+      background-size: cover;
+      color: white;
+    }
+    .container {
+      background-color: rgba(0,0,0,0.7);
+      margin-top: 100px;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    table {
+      background-color: white;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Subscribers</h1>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="subscribersTable"></tbody>
+    </table>
+    <a href="login.html" class="btn btn-warning">Sign Out</a>
+  </div>
+
+  <script>
+    if (localStorage.getItem('authorized') !== 'true') {
+  window.location.href = 'login.html';
+}
+
+const users = JSON.parse(localStorage.getItem('users') || '[]');
+const tbody = document.getElementById('subscribersTable');
+users.forEach((user, i) => {
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${i + 1}</td>
+    <td>${user.email}</td>
+    <td>••••••</td>
+  `;
+  tbody.appendChild(row);
+});
+
+  </script>
+</body>
+</html>
+>>>>>>> 132febc4c97488c94d9e0eacaefca2cfef479bb6

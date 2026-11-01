@@ -1,0 +1,327 @@
+<<<<<<< HEAD
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Japanese Drift Car Tuning Parts Shop</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      background-image: url(images/R.jpg);
+      background-repeat: repeat;
+      background-size: cover;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+      color: #fff;
+      border: 2px solid #ff9800;
+      border-radius: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 24px;
+      margin-bottom: 40px;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 20px;
+      background-color: #ff9800;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .cta-button:hover {
+      background-color: #ff5722;
+    }
+
+    .survey {
+      margin-top: 40px;
+    }
+
+    .survey label {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .survey input[type="radio"] {
+      margin-right: 5px;
+    }
+
+    .survey input[type="submit"] {
+      display: block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 20px;
+      background-color: #ff9800;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .survey input[type="submit"]:hover {
+      background-color: #ff5722;
+    }
+
+    .banner {
+      height: 400px;
+      background-image: url('images/55.jpg');
+      background-repeat: no-repeat;
+      background-size: cover;
+      animation: changeImage 50s infinite;
+    }
+
+    @keyframes changeImage {
+      0% { background-image: url('images/00.jpg'); }
+      6% { background-image: url('images/02.jpg'); }
+      12% { background-image: url('images/04.jpg'); }
+      18% { background-image: url('images/06.jpg'); }
+      24% { background-image: url('images/08.jpg'); }
+      30% { background-image: url('images/10.jpg'); }
+      36% { background-image: url('images/12.jpg'); }
+      42% { background-image: url('images/25.jpg'); }
+      48% { background-image: url('images/27.jpg'); }
+      54% { background-image: url('images/28.jpg'); }
+      60% { background-image: url('images/30.jpg'); }
+      66% { background-image: url('images/40.jpg'); }
+      72% { background-image: url('images/42.jpg'); }
+      78% { background-image: url('images/43.jpg'); }
+      84% { background-image: url('images/45.jpg'); }
+      92% { background-image: url('images/23.jpg'); }
+      100% { background-image: url('images/77.jpg'); }
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="banner"></div>
+  </div>
+
+  <div class="container">
+    <h1>Japanese Drift Car Tuning Parts Shop</h1>
+    <p>On this website, you will find a wide selection of parts for tuning your Japanese drift cars. Enhance your vehicles, create a unique style, and enjoy unforgettable experiences on the track.</p>
+    <a href="index.html" class="cta-button">Go to the Shop</a>
+
+    <div class="survey">
+      <h2>Survey</h2>
+      <p>What is your favorite car?</p>
+      <form id="surveyForm">
+        <label><input type="radio" name="car" value="Toyota"> Toyota</label>
+        <label><input type="radio" name="car" value="Nissan"> Nissan</label>
+        <label><input type="radio" name="car" value="Honda"> Honda</label>
+        <label><input type="radio" name="car" value="Mitsubishi"> Mitsubishi</label>
+        <input type="submit" value="Submit" id="submitVote">
+      </form>
+      <p id="voteResult" style="margin-top: 15px; font-size: 18px;"></p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("surveyForm");
+    const result = document.getElementById("voteResult");
+
+    // Перевірка localStorage
+    const savedVote = localStorage.getItem("favoriteCar");
+    if (savedVote) {
+      result.textContent = "Your previous vote: " + savedVote;
+      form.style.display = "none";
+    }
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const selected = form.querySelector('input[name="car"]:checked');
+      if (selected) {
+        localStorage.setItem("favoriteCar", selected.value);
+        result.textContent = "Thanks! You voted for: " + selected.value;
+        form.style.display = "none";
+      } else {
+        result.textContent = "Please select a car before submitting.";
+      }
+    });
+  </script>
+</body>
+</html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Japanese Drift Car Tuning Parts Shop</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      background-image: url(images/R.jpg);
+      background-repeat: repeat;
+      background-size: cover;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+      color: #fff;
+      border: 2px solid #ff9800;
+      border-radius: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 24px;
+      margin-bottom: 40px;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 20px;
+      background-color: #ff9800;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .cta-button:hover {
+      background-color: #ff5722;
+    }
+
+    .survey {
+      margin-top: 40px;
+    }
+
+    .survey label {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .survey input[type="radio"] {
+      margin-right: 5px;
+    }
+
+    .survey input[type="submit"] {
+      display: block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 20px;
+      background-color: #ff9800;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .survey input[type="submit"]:hover {
+      background-color: #ff5722;
+    }
+
+    .banner {
+      height: 400px;
+      background-image: url('images/55.jpg');
+      background-repeat: no-repeat;
+      background-size: cover;
+      animation: changeImage 50s infinite;
+    }
+
+    @keyframes changeImage {
+      0% { background-image: url('images/00.jpg'); }
+      6% { background-image: url('images/02.jpg'); }
+      12% { background-image: url('images/04.jpg'); }
+      18% { background-image: url('images/06.jpg'); }
+      24% { background-image: url('images/08.jpg'); }
+      30% { background-image: url('images/10.jpg'); }
+      36% { background-image: url('images/12.jpg'); }
+      42% { background-image: url('images/25.jpg'); }
+      48% { background-image: url('images/27.jpg'); }
+      54% { background-image: url('images/28.jpg'); }
+      60% { background-image: url('images/30.jpg'); }
+      66% { background-image: url('images/40.jpg'); }
+      72% { background-image: url('images/42.jpg'); }
+      78% { background-image: url('images/43.jpg'); }
+      84% { background-image: url('images/45.jpg'); }
+      92% { background-image: url('images/23.jpg'); }
+      100% { background-image: url('images/77.jpg'); }
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="banner"></div>
+  </div>
+
+  <div class="container">
+    <h1>Japanese Drift Car Tuning Parts Shop</h1>
+    <p>On this website, you will find a wide selection of parts for tuning your Japanese drift cars. Enhance your vehicles, create a unique style, and enjoy unforgettable experiences on the track.</p>
+    <a href="index.html" class="cta-button">Go to the Shop</a>
+
+    <div class="survey">
+      <h2>Survey</h2>
+      <p>What is your favorite car?</p>
+      <form id="surveyForm">
+        <label><input type="radio" name="car" value="Toyota"> Toyota</label>
+        <label><input type="radio" name="car" value="Nissan"> Nissan</label>
+        <label><input type="radio" name="car" value="Honda"> Honda</label>
+        <label><input type="radio" name="car" value="Mitsubishi"> Mitsubishi</label>
+        <input type="submit" value="Submit" id="submitVote">
+      </form>
+      <p id="voteResult" style="margin-top: 15px; font-size: 18px;"></p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("surveyForm");
+    const result = document.getElementById("voteResult");
+
+    // Перевірка localStorage
+    const savedVote = localStorage.getItem("favoriteCar");
+    if (savedVote) {
+      result.textContent = "Your previous vote: " + savedVote;
+      form.style.display = "none";
+    }
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const selected = form.querySelector('input[name="car"]:checked');
+      if (selected) {
+        localStorage.setItem("favoriteCar", selected.value);
+        result.textContent = "Thanks! You voted for: " + selected.value;
+        form.style.display = "none";
+      } else {
+        result.textContent = "Please select a car before submitting.";
+      }
+    });
+  </script>
+</body>
+</html>
+>>>>>>> 132febc4c97488c94d9e0eacaefca2cfef479bb6
