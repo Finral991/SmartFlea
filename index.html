@@ -1,3 +1,476 @@
-<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VeilSide</title><style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#000 url('images/RSP.gif') repeat;color:#fff;font:clamp(13px,1.1vw,16px) Arial,sans-serif}.app{width:min(96vw,1240px);min-height:100vh;margin:auto;padding:14px;background:rgba(0,0,0,.94);border-left:2px solid #fff;border-right:2px solid #fff}.header{display:flex;align-items:center;gap:12px;padding:5px 9px;border:2px solid #fff}.brand{display:flex;align-items:center;gap:7px;color:#fff;text-decoration:none;font-weight:bold}.brand img{width:47px;height:35px;object-fit:cover}nav{display:flex;flex-wrap:nowrap;gap:clamp(9px,1.5vw,22px);margin-left:auto;white-space:nowrap}nav span{display:contents}nav a{color:#fff;text-decoration:none;font-size:clamp(10px,.9vw,14px);font-weight:bold}.banner{display:block;height:clamp(140px,19vw,240px);margin-top:12px;border:2px solid #fff;background:center/cover url('images/00.jpg');animation:cars 45s infinite}@keyframes cars{0%,18%{background-image:url('images/00.jpg')}25%,43%{background-image:url('images/25.jpg')}50%,68%{background-image:url('images/42.jpg')}75%,100%{background-image:url('images/77.jpg')}}.title{text-align:center;margin:16px 0 8px;font-size:clamp(16px,1.5vw,21px)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1vw,14px)}.card{padding:5px;border:2px solid #fff;background:#fff;color:#111;text-decoration:none}.card:hover{outline:2px solid #b9e2de}.card img{display:block;width:100%;aspect-ratio:1/.79;object-fit:cover}.card strong{display:block;margin-top:5px}.person{display:grid;justify-items:center;gap:7px;min-height:130px;padding:10px;border:2px solid #fff;color:#fff;text-decoration:none}.avatar{display:grid;place-items:center;width:clamp(62px,7vw,90px);height:clamp(62px,7vw,90px);overflow:hidden;border-radius:50%;background:#ddd;color:#111;font-size:22px;font-weight:bold}.avatar img{width:100%;height:100%;object-fit:cover}.empty{grid-column:1/-1;padding:25px;text-align:center;color:#bbb}footer{margin-top:15px;padding:9px;border:2px solid #fff;font-size:10px;line-height:1.5}.background-control{position:fixed;right:12px;bottom:12px;padding:6px 9px;border:1px solid #fff;border-radius:14px;background:#111;color:#fff;font-size:10px;cursor:pointer}.background-control input{display:none}@media(max-width:560px){.app{width:100%;border:0;padding:8px}.header{gap:6px}.brand img{width:38px;height:28px}nav{gap:7px}nav a{font-size:9px}.banner{height:85px}.grid{gap:7px}.card{padding:3px}.card strong{font-size:10px}.person{min-height:96px}}
-</style></head><body><div class="app"><header class="header"><a class="brand" href="index.html"><img src="images/logo.jpg">VEILSIDE</a><nav><a href="index.html">HOME</a><a href="doct.html">RECOMMENDED</a><a href="views/about.html">CHATS</a><span data-account-nav><a href="views/login.html">LOG IN</a></span></nav></header><main><a class="banner" href="doct.html"></a><h1 class="title">RECOMMENDED</h1><section id="posts" class="grid"><p class="empty">Loading posts…</p></section><h2 class="title">CHATS</h2><section id="people" class="grid"><p class="empty">Sign in to see registered users.</p></section></main><footer>© 2026 VeilSide. All Rights Reserved.<br>123 Main Street · smartflea@company.com</footer></div><label class="background-control">BACKGROUND<input id="background" type="file" accept="image/*"></label><script type="module">import {attachAccountNav} from './account-nav.js';import {auth,db,collection,getDocs,onAuthStateChanged} from './firebase.js';attachAccountNav('');const $=s=>document.querySelector(s),esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));const stored=localStorage.getItem('veilside-background');if(stored)document.body.style.backgroundImage=`url(${stored})`;$('#background').onchange=e=>{const r=new FileReader();if(e.target.files[0]){r.onload=()=>{localStorage.setItem('veilside-background',r.result);document.body.style.backgroundImage=`url(${r.result})`};r.readAsDataURL(e.target.files[0])}};async function render(){try{const posts=(await getDocs(collection(db,'posts'))).docs.map(d=>({id:d.id,...d.data()})).slice(0,9);$('#posts').innerHTML=posts.length?posts.map(p=>`<a class="card" href="doct.html?post=${p.id}"><img src="${p.imageUrl}" alt="${esc(p.title)}"><strong>${esc(p.title)}</strong></a>`).join(''):'<p class="empty">No posts yet — add one in Admin Console.</p>'}catch(e){$('#posts').innerHTML='<p class="empty">Posts unavailable. Publish Firestore rules for posts.</p>'}};onAuthStateChanged(auth,async user=>{render();if(!user)return;try{const people=(await getDocs(collection(db,'users'))).docs.filter(d=>d.id!==user.uid).map(d=>({id:d.id,...d.data()})).slice(0,6);$('#people').innerHTML=people.length?people.map(p=>`<a class="person" href="views/about.html?user=${p.id}"><span class="avatar">${p.avatarUrl?`<img src="${p.avatarUrl}">`:esc((p.name||p.fullName||'?')[0])}</span><strong>${esc(p.name||p.fullName)}</strong></a>`).join(''):'<p class="empty">No other registered users yet.</p>'}catch(e){$('#people').innerHTML='<p class="empty">Users unavailable. Publish Firestore rules for users.</p>'}});</script></body></html>
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SmartFlea</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: #07080a;
+        background-image:
+          radial-gradient(circle at 50% 0%, rgba(78, 205, 196, 0.09) 0%, transparent 55%),
+          radial-gradient(circle at 100% 100%, rgba(31, 80, 73, 0.12) 0%, transparent 50%),
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+        background-attachment: fixed;
+        color: #fff;
+        font: clamp(13px, 1.1vw, 15px) Arial, sans-serif;
+      }
+      .app {
+        width: min(96vw, 1240px);
+        min-height: 100vh;
+        margin: auto;
+        padding: 16px;
+        background: rgba(10, 10, 12, 0.95);
+        border-left: 2px solid rgba(255, 255, 255, 0.85);
+        border-right: 2px solid rgba(255, 255, 255, 0.85);
+        box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 7px 12px;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        background: rgba(20, 20, 24, 0.7);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      .brand img {
+        width: 120px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+      nav {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: clamp(10px, 1.6vw, 24px);
+        margin-left: auto;
+        white-space: nowrap;
+        align-items: center;
+      }
+      nav span {
+        display: contents;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        font-size: clamp(11px, 0.95vw, 13px);
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        transition: color 0.15s ease, text-shadow 0.15s ease;
+      }
+      nav a:hover,
+      nav a.active {
+        color: #4ecdc4;
+        text-shadow: 0 0 8px rgba(78, 205, 196, 0.4);
+      }
+      .banner {
+        display: block;
+        height: clamp(140px, 19vw, 240px);
+        margin-top: 14px;
+        border: 2px solid #fff;
+        border-radius: 10px;
+        background: center/cover url("images/B1.jpg");
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+        animation: smartBanners 27s infinite;
+        overflow: hidden;
+        transition: transform 0.25s ease, border-color 0.25s ease;
+      }
+      .banner:hover {
+        border-color: #4ecdc4;
+        box-shadow: 0 8px 25px rgba(78, 205, 196, 0.35);
+      }
+      @keyframes smartBanners {
+        0%, 9.1% {
+          background-image: url("images/B1.jpg");
+        }
+        11.1%, 20.2% {
+          background-image: url("images/B2.jpg");
+        }
+        22.2%, 31.3% {
+          background-image: url("images/B3.jpg");
+        }
+        33.3%, 42.4% {
+          background-image: url("images/B4.jpg");
+        }
+        44.4%, 53.5% {
+          background-image: url("images/B5.jpg");
+        }
+        55.5%, 64.6% {
+          background-image: url("images/B6.jpg");
+        }
+        66.6%, 75.7% {
+          background-image: url("images/B7.jpg");
+        }
+        77.7%, 86.8% {
+          background-image: url("images/B8.jpg");
+        }
+        88.8%, 97.9% {
+          background-image: url("images/B9.jpg");
+        }
+        100% {
+          background-image: url("images/B1.jpg");
+        }
+      }
+      .title {
+        text-align: center;
+        margin: 22px 0 12px;
+        font-size: clamp(17px, 1.6vw, 22px);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(10px, 1.3vw, 16px);
+      }
+      .card {
+        padding: 7px;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        background: #fff;
+        color: #111;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: #4ecdc4;
+        box-shadow: 0 8px 24px rgba(78, 205, 196, 0.25);
+      }
+      .card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 0.78;
+        object-fit: cover;
+        border-radius: 4px;
+        transition: transform 0.25s ease;
+      }
+      .card:hover img {
+        transform: scale(1.02);
+      }
+      .card strong {
+        display: block;
+        margin-top: 7px;
+        font-size: clamp(13px, 1.1vw, 15px);
+        color: #111;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .person {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 130px;
+        padding: 14px 10px;
+        border: 2px solid rgba(255, 255, 255, 0.85);
+        border-radius: 8px;
+        background: rgba(24, 24, 28, 0.7);
+        color: #fff;
+        text-decoration: none;
+        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      }
+      .person:hover {
+        transform: translateY(-4px);
+        border-color: #4ecdc4;
+        background: rgba(32, 40, 42, 0.85);
+      }
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: clamp(56px, 6vw, 76px);
+        height: clamp(56px, 6vw, 76px);
+        overflow: hidden;
+        border-radius: 50%;
+        background: #333;
+        border: 2px solid #555;
+        color: #fff;
+        font-size: clamp(18px, 1.8vw, 24px);
+        font-weight: bold;
+        transition: border-color 0.2s ease;
+      }
+      .person:hover .avatar {
+        border-color: #4ecdc4;
+      }
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .person strong {
+        font-size: clamp(12px, 1vw, 14px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90%;
+        text-align: center;
+      }
+      .empty {
+        grid-column: 1/-1;
+        padding: 25px;
+        text-align: center;
+        color: #bbb;
+      }
+      footer {
+        margin-top: 24px;
+        padding: 12px;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.6;
+        text-align: center;
+        background: rgba(20, 20, 24, 0.6);
+      }
+      .background-control {
+        position: fixed;
+        right: 14px;
+        bottom: 14px;
+        padding: 7px 12px;
+        border: 1px solid #fff;
+        border-radius: 14px;
+        background: rgba(17, 17, 17, 0.9);
+        color: #fff;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+        z-index: 50;
+      }
+      .background-control:hover {
+        background: #333;
+        border-color: #4ecdc4;
+      }
+      .background-control input {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        .app {
+          width: 100%;
+          border: 0;
+          padding: 8px;
+        }
+        .header {
+          gap: 6px;
+        }
+        .brand img {
+          width: 38px;
+          height: 28px;
+        }
+        nav {
+          gap: 8px;
+        }
+        nav a {
+          font-size: 10px;
+        }
+        .banner {
+          height: 95px;
+        }
+        .grid {
+          gap: 8px;
+        }
+        .card {
+          padding: 4px;
+        }
+        .person {
+          min-height: 100px;
+          padding: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <a class="brand" href="index.html"
+          ><img src="images/logo.jpg" alt="SmartFlea" /></a
+        >
+        <nav>
+          <a href="index.html" class="active">HOME</a>
+          <a href="doct.html">RECOMMENDED</a>
+          <a href="views/about.html">CHATS</a>
+          <span data-account-nav><a href="views/login.html">LOG IN</a></span>
+        </nav>
+      </header>
+      <main>
+        <a class="banner" href="doct.html" title="Go to Recommended"></a>
+
+        <!-- Exactly 9 random posts (3x3 grid) -->
+        <h1 class="title">RECOMMENDED</h1>
+        <section id="posts" class="grid">
+          <a class="card" href="doct.html?post=test1"><img src="images/E1.jpg" alt="Xiaomi 14 Ultra"><strong>Xiaomi 14 Ultra</strong></a>
+          <a class="card" href="doct.html?post=test4"><img src="images/E2.jpg" alt="iPhone Air"><strong>iPhone Air</strong></a>
+          <a class="card" href="doct.html?post=test3"><img src="images/E3.jpg" alt="Google Pixel"><strong>Google Pixel</strong></a>
+          <a class="card" href="doct.html?post=test2"><img src="images/E4.jpg" alt="Samsung Fold"><strong>Samsung Fold</strong></a>
+          <a class="card" href="doct.html?post=test5"><img src="images/E5.jpg" alt="Huawei Trifold"><strong>Huawei Trifold</strong></a>
+          <a class="card" href="doct.html?post=test6"><img src="images/E6.jpg" alt="Motorola Razr"><strong>Motorola Razr</strong></a>
+          <a class="card" href="doct.html?post=test7"><img src="images/E7.jpg" alt="Nothing Phone"><strong>Nothing Phone</strong></a>
+          <a class="card" href="doct.html?post=test8"><img src="images/E8.jpg" alt="Honor Magic"><strong>Honor Magic</strong></a>
+          <a class="card" href="doct.html?post=test9"><img src="images/E9.jpg" alt="OnePlus 13"><strong>OnePlus 13</strong></a>
+        </section>
+
+        <!-- People / Chats: multiple of 3 (max 6), random each time -->
+        <h2 class="title">CHATS</h2>
+        <section id="people" class="grid">
+          <p class="empty">Sign in to see registered users.</p>
+        </section>
+      </main>
+      <footer>
+        © 2026 SmartFlea. All Rights Reserved.<br />123 Main Street · smartflea@company.com
+      </footer>
+    </div>
+
+    <label class="background-control"
+      >BACKGROUND<input id="background" type="file" accept="image/*"
+    /></label>
+
+    <script type="module">
+      import { attachAccountNav } from "./account-nav.js";
+      import {
+        auth,
+        db,
+        collection,
+        getDocs,
+        onAuthStateChanged,
+      } from "./firebase.js";
+
+      attachAccountNav("");
+
+      const $ = (s) => document.querySelector(s);
+      const esc = (s) =>
+        String(s || "").replace(
+          /[&<>]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+        );
+
+      const stored = localStorage.getItem("smartflea-background");
+      if (stored) document.body.style.backgroundImage = `url(${stored})`;
+
+      $("#background").onchange = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          localStorage.setItem("smartflea-background", r.result);
+          document.body.style.backgroundImage = `url(${r.result})`;
+        };
+        r.readAsDataURL(f);
+      };
+
+      const fallbackHomePosts = [
+        { id: "test1", title: "Xiaomi 14 Ultra", imageUrl: "images/E1.jpg" },
+        { id: "test4", title: "iPhone Air", imageUrl: "images/E2.jpg" },
+        { id: "test3", title: "Google Pixel", imageUrl: "images/E3.jpg" },
+        { id: "test2", title: "Samsung Fold", imageUrl: "images/E4.jpg" },
+        { id: "test5", title: "Huawei Trifold", imageUrl: "images/E5.jpg" },
+        { id: "test6", title: "Motorola Razr", imageUrl: "images/E6.jpg" },
+        { id: "test7", title: "Nothing Phone", imageUrl: "images/E7.jpg" },
+        { id: "test8", title: "Honor Magic", imageUrl: "images/E8.jpg" },
+        { id: "test9", title: "OnePlus 13", imageUrl: "images/E9.jpg" },
+      ];
+
+      async function loadPosts() {
+        try {
+          const snap = await getDocs(collection(db, "posts"));
+          const dbPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+          // Combine db posts with fallback items so there are at least 9
+          let pool = [...dbPosts];
+          if (pool.length < 9) {
+            const fillers = fallbackHomePosts.filter(
+              (f) => !dbPosts.some((p) => p.id === f.id),
+            );
+            pool = [...pool, ...fillers];
+          }
+
+          // Pick 9 random posts so each visit gives a dynamic, fresh selection!
+          const randomized = [...pool].sort(() => Math.random() - 0.5).slice(0, 9);
+
+          $("#posts").innerHTML = randomized
+            .map(
+              (p) =>
+                `<a class="card" href="doct.html?post=${p.id}"><img src="${p.imageUrl}" alt="${esc(p.title)}"><strong>${esc(p.title)}</strong></a>`,
+            )
+            .join("");
+        } catch (e) {
+          console.warn("Firestore posts unavailable, using fallback posts:", e);
+          const randomized = [...fallbackHomePosts]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 9);
+          $("#posts").innerHTML = randomized
+            .map(
+              (p) =>
+                `<a class="card" href="doct.html?post=${p.id}"><img src="${p.imageUrl}" alt="${esc(p.title)}"><strong>${esc(p.title)}</strong></a>`,
+            )
+            .join("");
+        }
+      }
+
+      onAuthStateChanged(auth, async (user) => {
+        loadPosts();
+        if (!user) return;
+        try {
+          const allPeople = (await getDocs(collection(db, "users"))).docs
+            .filter((d) => d.id !== user.uid)
+            .map((d) => ({ id: d.id, ...d.data() }));
+
+          if (!allPeople.length) {
+            $("#people").innerHTML = '<p class="empty">No other registered users yet.</p>';
+            return;
+          }
+
+          // Randomize user order
+          const shuffled = [...allPeople].sort(() => Math.random() - 0.5);
+
+          // If < 3: show as many as there are (1 or 2)
+          // If >= 3: multiple of 3 (max 6 = 3x2 rows, or 3 = 3x1 row)
+          let count = shuffled.length;
+          if (count >= 6) {
+            count = 6;
+          } else if (count >= 3) {
+            count = Math.floor(count / 3) * 3;
+          }
+
+          const selected = shuffled.slice(0, count);
+
+          $("#people").innerHTML = selected
+            .map((p) => {
+              const name = esc(p.name || p.fullName || "User");
+              const letter = (p.name || p.fullName || "?")[0].toUpperCase();
+              return `
+              <a class="person" href="views/about.html?user=${p.id}">
+                <span class="avatar">${p.avatarUrl ? `<img src="${p.avatarUrl}" alt="${name}">` : letter}</span>
+                <strong>${name}</strong>
+              </a>
+            `;
+            })
+            .join("");
+        } catch {
+          $("#people").innerHTML =
+            '<p class="empty">Users unavailable. Check Firestore rules.</p>';
+        }
+      });
+    </script>
+  </body>
+</html>

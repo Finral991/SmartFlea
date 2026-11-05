@@ -1,11 +1,382 @@
 <!doctype html>
-<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VeilSide — Registration</title>
-<style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#000 url('../images/R.jpg') repeat;color:#fff;font:14px Arial,sans-serif}.app{width:min(100%,540px);min-height:100vh;margin:auto;padding:10px;background:#000;border-left:2px solid #fff;border-right:2px solid #fff}.header{display:flex;align-items:center;gap:10px;padding:4px 8px;border:2px solid #fff}.brand{display:flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-weight:bold;font-size:12px}.brand img{width:45px;height:32px;object-fit:cover}nav{margin-left:auto;display:flex;gap:13px}nav a{color:#fff;text-decoration:none;font-size:11px;font-weight:bold}nav a:hover,nav .active{color:#b9e2de}.box{width:min(100%,310px);margin:13px auto 0}.box h1{margin:0 0 12px;font-size:18px;text-align:center}.field{display:grid;gap:3px;margin-bottom:7px;font-size:11px;font-weight:bold}.field input,.field select{width:100%;height:23px;border:2px solid #fff;border-radius:14px;background:#777;color:#fff;padding:2px 11px;font:inherit;outline:none}.field input:focus,.field select:focus{border-color:#b9e2de}.terms{display:flex;align-items:flex-start;gap:5px;margin:5px 0 13px;font-size:10px;font-weight:bold;line-height:1.05}.terms input{margin:0}.buttons{display:flex;justify-content:space-between;gap:8px}.button{padding:3px 13px;border:2px solid #fff;border-radius:14px;background:#777;color:#fff;text-decoration:none;font-weight:bold;cursor:pointer}.button:hover{background:#9a9a9a}.message{min-height:17px;margin-top:9px;color:#b9e2de;font-size:11px;text-align:center}footer{display:flex;justify-content:space-between;align-items:center;margin-top:46px;padding:7px;border:2px solid #fff;font-size:8px}footer span:last-child{font-size:17px}@media(max-width:430px){.app{border:0;padding:8px}.header{gap:6px}nav{gap:8px}nav a{font-size:9px}.brand{font-size:10px}}
-body{background:#000 url('../images/RSP.gif') repeat;font-size:clamp(14px,1.1vw,17px)}.app{width:min(96vw,900px);padding:clamp(8px,1vw,15px);background:rgba(0,0,0,.94)}.box{width:min(92%,430px)}.background-control{position:fixed;right:12px;bottom:12px;z-index:10;padding:6px 9px;border:1px solid #fff;border-radius:14px;background:#111;color:#fff;font-size:10px;font-weight:bold;cursor:pointer}.background-control input{display:none}
-</style></head><body><div class="app">
-<header class="header"><a class="brand" href="../index.html"><img src="../images/logo.jpg" alt="VeilSide">VEILSIDE</a><nav><a href="../index.html">HOME</a><a href="../doct.html">RECOMMENDED</a><a href="about.html">CHATS</a><a class="active" href="login.html">LOG IN</a></nav></header>
-<main class="box"><h1>REGISTRATION</h1><form id="register-form"><label class="field">Full Name<input id="name" autocomplete="name" required></label><label class="field">Email Address<input id="email" type="email" autocomplete="email" required></label><label class="field">Password<input id="password" type="password" minlength="4" autocomplete="new-password" required></label><label class="field">Confirm Password<input id="confirm-password" type="password" minlength="4" autocomplete="new-password" required></label><label class="field">Date of Birth<input id="birth" type="date" required></label><label class="field">Gender<select id="gender" required><option value="" selected disabled>Select Gender</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select></label><label class="field">Country<input id="country" placeholder="Select Country" required></label><label class="terms"><input id="terms" type="checkbox" required>I agree to the terms and conditions</label><div class="buttons"><button class="button" type="submit">Submit</button><a class="button" href="login.html">I have an account</a></div><p id="message" class="message"></p></form></main>
-<footer><span>© 2026 VeilSide. All Rights Reserved.</span><span>●　◎</span></footer></div>
-<script type="module">import {auth,db,doc,setDoc,serverTimestamp,createUserWithEmailAndPassword,signInWithEmailAndPassword,updateProfile,createUniqueUsername} from '../firebase.js';document.querySelector('#register-form').addEventListener('submit',async e=>{e.preventDefault();const name=document.querySelector('#name').value.trim(),email=document.querySelector('#email').value.trim().toLowerCase(),password=document.querySelector('#password').value,confirm=document.querySelector('#confirm-password').value,message=document.querySelector('#message'),dateOfBirth=document.querySelector('#birth').value;if(password!==confirm){message.textContent='Passwords do not match.';return}message.textContent='Creating account…';try{let credentials;try{credentials=await createUserWithEmailAndPassword(auth,email,password)}catch(error){if(error.code!=='auth/email-already-in-use')throw error;credentials=await signInWithEmailAndPassword(auth,email,password)}const username=await createUniqueUsername(name);await updateProfile(credentials.user,{displayName:name});const profile={fullName:name,name,username,email,phone:'',bio:'',avatarUrl:'',dateOfBirth,birth:dateOfBirth,gender:document.querySelector('#gender').value,country:document.querySelector('#country').value,role:'user',online:true,createdAt:serverTimestamp(),lastSeen:serverTimestamp()};await setDoc(doc(db,'users',credentials.user.uid),profile);await setDoc(doc(db,'usernames',username),{uid:credentials.user.uid,email});message.textContent=`Registration successful. Your username: ${username}`;setTimeout(()=>location.href='login.html',1600)}catch(error){console.error(error);if(error.code==='auth/wrong-password'||error.code==='auth/invalid-credential')message.textContent='This email exists, but the password is different.';else if(error.code==='auth/operation-not-allowed')message.textContent='Enable Email/Password in Firebase Authentication.';else if(error.code==='permission-denied')message.textContent='Firestore rules are blocking registration. Publish the provided rules.';else message.textContent=`Could not create the account: ${error.code||'unknown error'}`}})</script>
-<label class="background-control">BACKGROUND<input id="background-upload" type="file" accept="image/*"></label><script>const backgroundFile=document.querySelector('#background-upload'),storedBackground=localStorage.getItem('veilside-background');if(storedBackground)document.body.style.backgroundImage=`url(${storedBackground})`;backgroundFile.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{localStorage.setItem('veilside-background',reader.result);document.body.style.backgroundImage=`url(${reader.result})`}catch{alert('This image is too large.')}};reader.readAsDataURL(file)}</script></body></html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SmartFlea — Registration</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: #07080a;
+        background-image:
+          radial-gradient(circle at 50% 0%, rgba(78, 205, 196, 0.09) 0%, transparent 55%),
+          radial-gradient(circle at 100% 100%, rgba(31, 80, 73, 0.12) 0%, transparent 50%),
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+        background-attachment: fixed;
+        color: #fff;
+        font: clamp(13px, 1.1vw, 15px) Arial, sans-serif;
+      }
+      .app {
+        width: min(96vw, 1240px);
+        min-height: 100vh;
+        margin: auto;
+        padding: 16px;
+        background: rgba(10, 10, 12, 0.95);
+        border-left: 2px solid rgba(255, 255, 255, 0.85);
+        border-right: 2px solid rgba(255, 255, 255, 0.85);
+        box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 7px 12px;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        background: rgba(20, 20, 24, 0.7);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      .brand img {
+        width: 46px;
+        height: 34px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+      nav {
+        display: flex;
+        gap: clamp(10px, 1.6vw, 24px);
+        margin-left: auto;
+        align-items: center;
+        white-space: nowrap;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        font-size: clamp(11px, 0.95vw, 13px);
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        transition: color 0.15s ease;
+      }
+      nav a:hover,
+      nav .active {
+        color: #4ecdc4;
+      }
+      .box {
+        max-width: 520px;
+        margin: 30px auto;
+        padding: 24px;
+        border: 2px solid #fff;
+        border-radius: 12px;
+        background: #141418;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+      }
+      .box h1 {
+        margin: 0 0 12px;
+        font-size: 18px;
+        text-align: center;
+      }
+      .field {
+        display: grid;
+        gap: 3px;
+        margin-bottom: 7px;
+        font-size: 11px;
+        font-weight: bold;
+      }
+      .field input,
+      .field select {
+        width: 100%;
+        height: 23px;
+        border: 2px solid #fff;
+        border-radius: 14px;
+        background: #777;
+        color: #fff;
+        padding: 2px 11px;
+        font: inherit;
+        outline: none;
+      }
+      .field input:focus,
+      .field select:focus {
+        border-color: #b9e2de;
+      }
+      .terms {
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+        margin: 5px 0 13px;
+        font-size: 10px;
+        font-weight: bold;
+        line-height: 1.05;
+      }
+      .terms input {
+        margin: 0;
+      }
+      .buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .button {
+        padding: 3px 13px;
+        border: 2px solid #fff;
+        border-radius: 14px;
+        background: #777;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .button:hover {
+        background: #9a9a9a;
+      }
+      .message {
+        min-height: 17px;
+        margin-top: 9px;
+        color: #b9e2de;
+        font-size: 11px;
+        text-align: center;
+      }
+      footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 46px;
+        padding: 7px;
+        border: 2px solid #fff;
+        font-size: 8px;
+      }
+      footer span:last-child {
+        font-size: 17px;
+      }
+      @media (max-width: 600px) {
+        .app {
+          width: 100%;
+          border: 0;
+          padding: 8px;
+        }
+        .header {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        nav {
+          gap: 10px;
+        }
+        nav a {
+          font-size: 11px;
+        }
+        .box {
+          margin: 16px auto;
+          padding: 16px;
+        }
+      }
+      .background-control {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        z-index: 10;
+        padding: 6px 9px;
+        border: 1px solid #fff;
+        border-radius: 14px;
+        background: #111;
+        color: #fff;
+        font-size: 10px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .background-control input {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <a class="brand" href="../index.html"
+          ><img src="../images/logo.jpg" alt="SmartFlea" />SMARTFLEA</a
+        >
+        <nav>
+          <a href="../index.html">HOME</a><a href="../doct.html">RECOMMENDED</a
+          ><a href="about.html">CHATS</a
+          ><a class="active" href="login.html">LOG IN</a>
+        </nav>
+      </header>
+      <main class="box">
+        <h1>REGISTRATION</h1>
+        <form id="register-form">
+          <label class="field"
+            >Full Name<input id="name" autocomplete="name" required /></label
+          ><label class="field"
+            >Email Address<input
+              id="email"
+              type="email"
+              autocomplete="email"
+              required /></label
+          ><label class="field"
+            >Password<input
+              id="password"
+              type="password"
+              minlength="4"
+              autocomplete="new-password"
+              required /></label
+          ><label class="field"
+            >Confirm Password<input
+              id="confirm-password"
+              type="password"
+              minlength="4"
+              autocomplete="new-password"
+              required /></label
+          ><label class="field"
+            >Date of Birth<input id="birth" type="date" required /></label
+          ><label class="field"
+            >Gender<select id="gender" required>
+              <option value="" selected disabled>Select Gender</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Prefer not to say</option>
+            </select></label
+          ><label class="field"
+            >Country<input
+              id="country"
+              placeholder="Select Country"
+              required /></label
+          ><label class="terms"
+            ><input id="terms" type="checkbox" required />I agree to the terms
+            and conditions</label
+          >
+          <div class="buttons">
+            <button class="button" type="submit">Submit</button
+            ><a class="button" href="login.html">I have an account</a>
+          </div>
+          <p id="message" class="message"></p>
+        </form>
+      </main>
+      <footer>
+        <span>© 2026 SmartFlea. All Rights Reserved.</span><span>●　◎</span>
+      </footer>
+    </div>
+    <script type="module">
+      import {
+        auth,
+        db,
+        doc,
+        setDoc,
+        serverTimestamp,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        updateProfile,
+        createUniqueUsername,
+      } from "../firebase.js";
+      document
+        .querySelector("#register-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = document.querySelector("#name").value.trim(),
+            email = document.querySelector("#email").value.trim().toLowerCase(),
+            password = document.querySelector("#password").value,
+            confirm = document.querySelector("#confirm-password").value,
+            message = document.querySelector("#message"),
+            dateOfBirth = document.querySelector("#birth").value;
+          if (password !== confirm) {
+            message.textContent = "Passwords do not match.";
+            return;
+          }
+          message.textContent = "Creating account…";
+          try {
+            let credentials;
+            try {
+              credentials = await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password,
+              );
+            } catch (error) {
+              if (error.code !== "auth/email-already-in-use") throw error;
+              credentials = await signInWithEmailAndPassword(
+                auth,
+                email,
+                password,
+              );
+            }
+            const username = await createUniqueUsername(name);
+            await updateProfile(credentials.user, { displayName: name });
+            const profile = {
+              fullName: name,
+              name,
+              username,
+              email,
+              phone: "",
+              bio: "",
+              avatarUrl: "",
+              dateOfBirth,
+              birth: dateOfBirth,
+              gender: document.querySelector("#gender").value,
+              country: document.querySelector("#country").value,
+              role: "user",
+              online: true,
+              createdAt: serverTimestamp(),
+              lastSeen: serverTimestamp(),
+            };
+            await setDoc(doc(db, "users", credentials.user.uid), profile);
+            await setDoc(doc(db, "usernames", username), {
+              uid: credentials.user.uid,
+              email,
+            });
+            message.textContent = `Registration successful. Your username: ${username}`;
+            setTimeout(() => (location.href = "login.html"), 1600);
+          } catch (error) {
+            console.error(error);
+            if (
+              error.code === "auth/wrong-password" ||
+              error.code === "auth/invalid-credential"
+            )
+              message.textContent =
+                "This email exists, but the password is different.";
+            else if (error.code === "auth/operation-not-allowed")
+              message.textContent =
+                "Enable Email/Password in Firebase Authentication.";
+            else if (error.code === "permission-denied")
+              message.textContent =
+                "Firestore rules are blocking registration. Publish the provided rules.";
+            else
+              message.textContent = `Could not create the account: ${error.code || "unknown error"}`;
+          }
+        });
+    </script>
+    <label class="background-control"
+      >BACKGROUND<input id="background-upload" type="file" accept="image/*"
+    /></label>
+    <script>
+      const backgroundFile = document.querySelector("#background-upload"),
+        storedBackground = localStorage.getItem("smartflea-background");
+      if (storedBackground)
+        document.body.style.backgroundImage = `url(${storedBackground})`;
+      backgroundFile.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            localStorage.setItem("smartflea-background", reader.result);
+            document.body.style.backgroundImage = `url(${reader.result})`;
+          } catch {
+            alert("This image is too large.");
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+    </script>
+  </body>
+</html>

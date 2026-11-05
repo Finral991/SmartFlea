@@ -1,3 +1,1122 @@
-<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recommended</title><style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#000 url('images/RSP.gif') repeat;color:#fff;font:15px Arial}.app{width:min(96vw,1240px);min-height:100vh;margin:auto;padding:14px;background:rgba(0,0,0,.94);border-left:2px solid #fff;border-right:2px solid #fff}.header{display:flex;align-items:center;padding:5px 9px;border:2px solid #fff}.brand{display:flex;align-items:center;gap:7px;color:#fff;text-decoration:none;font-weight:bold}.brand img{width:47px;height:35px;object-fit:cover}nav{display:flex;margin-left:auto;gap:18px;white-space:nowrap}nav span{display:contents}nav a{color:#fff;text-decoration:none;font-size:12px;font-weight:bold}.title{text-align:center;margin:16px 0 9px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{padding:5px;border:2px solid #fff;background:#fff;color:#111;cursor:pointer;text-align:left}.card img{display:block;width:100%;aspect-ratio:1/.78;object-fit:cover}.card strong{display:block;margin-top:5px}.detail[hidden],.feed[hidden]{display:none}.back{margin:12px 0;border:0;background:none;color:#fff;font-weight:bold;cursor:pointer}.post{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.post img,.info{width:100%;min-height:350px;border:2px solid #fff}.post img{object-fit:cover}.info{padding:14px;background:#080808}.rating,.comments{max-width:860px;margin:20px auto;text-align:center}.stars{display:flex;justify-content:center;gap:12px}.star{border:0;background:none;color:#999;font-size:36px;cursor:pointer}.star.selected{color:#fff}.button{padding:6px 16px;border:1px solid #fff;border-radius:14px;background:#777;color:#fff;font-weight:bold;cursor:pointer}.note{min-height:18px;color:#b9e2de;font-size:12px}.comment-form{display:grid;gap:8px}.comment-form textarea{min-height:76px;padding:9px;border:2px solid #fff;border-radius:14px;background:#666;color:#fff;font:inherit}.comment-form .button{justify-self:center}.comment{text-align:left;margin:8px 0;padding:9px;border-left:2px solid #b9e2de;background:#181818}.comment small{color:#bbb}.comment button{float:right}@media(max-width:700px){.app{width:100%;border:0;padding:8px}.post{grid-template-columns:1fr}.post img{height:300px;min-height:0}.grid{gap:7px}.card{padding:3px}nav{gap:8px}nav a{font-size:9px}}
-</style></head><body><div class="app"><header class="header"><a class="brand" href="index.html"><img src="images/logo.jpg">VEILSIDE</a><nav><a href="index.html">HOME</a><a href="views/about.html">CHATS</a><span data-account-nav><a href="views/login.html">LOG IN</a></span></nav></header><main><section id="feed" class="feed"><h1 class="title">RECOMMENDED</h1><div id="grid" class="grid"></div></section><section id="detail" class="detail" hidden><button id="back" class="back">← BACK</button><article id="post" class="post"></article><section class="rating"><h2>RATING</h2><div id="stars" class="stars"></div><button id="confirm-rating" class="button">Confirm rating</button><p id="rating-note" class="note"></p></section><section class="comments"><h2>COMMENTS</h2><form id="comment-form" class="comment-form"><textarea id="comment" placeholder="Write a comment…"></textarea><button class="button">Submit</button></form><div id="comments"></div></section></section></main></div><script type="module">import {auth,db,doc,getDoc,setDoc,collection,addDoc,deleteDoc,getDocs,query,orderBy,onSnapshot,serverTimestamp,onAuthStateChanged} from './firebase.js';import {attachAccountNav} from './account-nav.js';attachAccountNav('');const $=s=>document.querySelector(s),esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));let me,profile,posts=[],active,rating=0,unsub;onAuthStateChanged(auth,async u=>{me=u;profile=u?(await getDoc(doc(db,'users',u.uid))).data():null;load()});async function load(){try{posts=(await getDocs(collection(db,'posts'))).docs.map(d=>({id:d.id,...d.data()}));$('#grid').innerHTML=posts.map(p=>`<button class="card" data-id="${p.id}"><img src="${p.imageUrl}"><strong>${esc(p.title)}</strong></button>`).join('')||'<p>No posts yet.</p>'}catch{$('#grid').innerHTML='<p>Posts unavailable — check Firestore rules.</p>'}}function show(id){active=posts.find(p=>p.id===id);if(!active)return;$('#post').innerHTML=`<img src="${active.imageUrl}"><div class="info"><h1>${esc(active.title)}</h1><p>${esc(active.description)}</p><p>Keywords: ${esc((active.keywords||[]).join(', '))}</p></div>`;$('#feed').hidden=true;$('#detail').hidden=false;rating=0;renderStars();comments()}function renderStars(){$('#stars').innerHTML=[1,2,3,4,5].map(n=>`<button class="star ${n<=rating?'selected':''}" data-star="${n}">★</button>`).join('')}function comments(){if(unsub)unsub();unsub=onSnapshot(query(collection(db,'posts',active.id,'comments'),orderBy('createdAt','asc')),snap=>{$('#comments').innerHTML=snap.docs.map(d=>{const c=d.data(),del=me&&(c.authorId===me.uid||profile?.role==='admin');return `<article class="comment"><strong>${esc(c.authorName)}</strong>${del?`<button class="button" data-del="${d.id}">Delete</button>`:''}<br>${esc(c.text)}<br><small>${c.createdAt?.toDate?c.createdAt.toDate().toLocaleString():'now'}</small></article>`}).join('')})}document.addEventListener('click',async e=>{const id=e.target.closest('[data-id]')?.dataset.id;if(id)return show(id);if(e.target.dataset.star){rating=Number(e.target.dataset.star);renderStars()}if(e.target.dataset.del)await deleteDoc(doc(db,'posts',active.id,'comments',e.target.dataset.del))});$('#confirm-rating').onclick=async()=>{if(!me){location.href='views/login.html';return}if(!rating)return $('#rating-note').textContent='Choose 1–5 stars first.';try{await setDoc(doc(db,'posts',active.id,'ratings',me.uid),{value:rating,userId:me.uid,updatedAt:serverTimestamp()});$('#rating-note').textContent=`Rating saved: ${rating}/5`}catch(e){$('#rating-note').textContent='Rating was not saved. Add ratings rules.'}};$('#back').onclick=()=>{$('#detail').hidden=true;$('#feed').hidden=false;if(unsub)unsub()};$('#comment-form').onsubmit=async e=>{e.preventDefault();const text=$('#comment').value.trim();if(!text)return;if(!me){location.href='views/login.html';return}try{await addDoc(collection(db,'posts',active.id,'comments'),{authorId:me.uid,authorName:profile?.name||profile?.fullName||'User',text,createdAt:serverTimestamp()});$('#comment').value=''}catch{alert('Comment was not sent. Check Firestore rules.')}}</script></body></html>
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SmartFlea — Recommended</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: #07080a;
+        background-image:
+          radial-gradient(circle at 50% 0%, rgba(78, 205, 196, 0.09) 0%, transparent 55%),
+          radial-gradient(circle at 100% 100%, rgba(31, 80, 73, 0.12) 0%, transparent 50%),
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+        background-attachment: fixed;
+        color: #fff;
+        font: clamp(13px, 1.1vw, 15px) Arial, sans-serif;
+      }
+      .app {
+        width: min(96vw, 1240px);
+        min-height: 100vh;
+        margin: auto;
+        padding: 16px;
+        background: rgba(10, 10, 12, 0.95);
+        border-left: 2px solid rgba(255, 255, 255, 0.85);
+        border-right: 2px solid rgba(255, 255, 255, 0.85);
+        box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 7px 12px;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        background: rgba(20, 20, 24, 0.7);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      .brand img {
+        width: 120px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+      nav {
+        display: flex;
+        gap: clamp(10px, 1.6vw, 24px);
+        margin-left: auto;
+        align-items: center;
+        white-space: nowrap;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        font-size: clamp(11px, 0.95vw, 13px);
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        transition: color 0.15s ease, text-shadow 0.15s ease;
+      }
+      nav a:hover,
+      nav a.active {
+        color: #4ecdc4;
+        text-shadow: 0 0 8px rgba(78, 205, 196, 0.4);
+      }
+      .title {
+        text-align: center;
+        margin: 22px 0 14px;
+        font-size: clamp(17px, 1.6vw, 22px);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(10px, 1.3vw, 16px);
+        margin-top: 15px;
+      }
+      .card {
+        padding: 7px;
+        background: #fff;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        color: #111;
+        text-align: left;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        overflow: hidden;
+        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: #4ecdc4;
+        box-shadow: 0 8px 24px rgba(78, 205, 196, 0.25);
+      }
+      .card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 0.78;
+        object-fit: cover;
+        border-radius: 4px;
+        transition: transform 0.25s ease;
+      }
+      .card:hover img {
+        transform: scale(1.02);
+      }
+      .card strong,
+      .card b {
+        display: block;
+        margin-top: 7px;
+        color: #111;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card small {
+        display: block;
+        margin-top: 3px;
+        color: #666;
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .feed[hidden],
+      .detail[hidden] {
+        display: none;
+      }
+      .back {
+        margin: 12px 0 18px;
+        padding: 7px 16px;
+        border: 1px solid #fff;
+        background: #333;
+        color: #fff;
+        font-weight: bold;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .back:hover {
+        background: #4ecdc4;
+        color: #111;
+        border-color: #4ecdc4;
+      }
+      .post {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 18px;
+      }
+      .post img {
+        width: 100%;
+        min-height: 350px;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        object-fit: cover;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      }
+      .info {
+        padding: 18px;
+        background: #131316;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      }
+      .info h1 {
+        margin: 0 0 10px;
+        font-size: clamp(20px, 2vw, 26px);
+        letter-spacing: 0.5px;
+      }
+      .info p {
+        line-height: 1.5;
+        margin: 6px 0;
+        color: #eee;
+      }
+      .keywords {
+        color: #4ecdc4;
+        font-size: 12px;
+        margin-top: auto;
+        padding-top: 8px;
+      }
+      .kw-tag {
+        display: inline-block;
+        background: rgba(78, 205, 196, 0.15);
+        color: #4ecdc4;
+        padding: 2px 7px;
+        border-radius: 10px;
+        margin: 2px;
+        font-size: 11px;
+      }
+      .post-rating-summary {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid #333;
+      }
+      .post-rating-summary h2 {
+        margin: 0 0 4px;
+        font-size: 15px;
+        color: #ffd46e;
+        letter-spacing: 0.5px;
+      }
+      .avg-stars {
+        font-size: 26px;
+        letter-spacing: 3px;
+        color: #ffd46e;
+        margin: 4px 0;
+        text-shadow: 0 0 10px rgba(255, 212, 110, 0.35);
+      }
+      .avg-stars .dim {
+        color: #444;
+        text-shadow: none;
+      }
+      .stats {
+        color: #b9e2de;
+        font-size: 13px;
+        margin: 4px 0 0;
+        min-height: 18px;
+      }
+      .similar {
+        margin: 32px 0 20px;
+        padding-top: 20px;
+        border-top: 1px dashed #444;
+      }
+      #similar .card:nth-child(n+4) {
+        display: none;
+      }
+      .comments {
+        max-width: 820px;
+        margin: 32px auto 16px;
+        text-align: center;
+      }
+      .user-rating-box {
+        margin: 0 auto 16px;
+        padding: 16px 12px;
+        text-align: center;
+        background: rgba(22, 22, 26, 0.7);
+        border: 1px solid #333;
+        border-radius: 10px;
+      }
+      .stars {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .star {
+        border: 0;
+        background: none;
+        color: #555;
+        font-size: 40px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        transition: color 0.15s ease, transform 0.12s ease;
+      }
+      .star:hover,
+      .star.hovered {
+        color: #fff;
+        transform: scale(1.15);
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+      }
+      .star.selected {
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      }
+      .btn {
+        padding: 7px 18px;
+        border: 1px solid #fff;
+        border-radius: 14px;
+        background: #777;
+        color: #fff;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.1s ease;
+      }
+      .btn:hover {
+        background: #999;
+        transform: translateY(-1px);
+      }
+      .btn-confirm {
+        padding: 8px 24px;
+        border-radius: 20px;
+        background: #555;
+        font-size: 14px;
+        border: 1.5px solid #fff;
+      }
+      .btn-confirm:hover {
+        background: #777;
+      }
+      .danger {
+        background: #dc3545;
+        border-color: #dc3545;
+      }
+      .danger:hover {
+        background: #bd2130;
+      }
+      .comment-form {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .comment-form textarea {
+        min-height: 84px;
+        padding: 12px;
+        border: 1px solid #555;
+        border-radius: 10px;
+        background: #202226;
+        color: #fff;
+        font: inherit;
+        resize: vertical;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .comment-form textarea:focus {
+        border-color: #4ecdc4;
+        box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
+        outline: none;
+      }
+      .comment {
+        margin: 10px 0;
+        padding: 12px 14px;
+        text-align: left;
+        border-left: 3px solid #4ecdc4;
+        border: 1px solid #333;
+        border-left-width: 4px;
+        border-left-color: #4ecdc4;
+        border-radius: 8px;
+        background: #18191c;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      .comment .btn {
+        float: right;
+        padding: 3px 10px;
+        font-size: 12px;
+      }
+      .score {
+        margin-left: 8px;
+        color: #ffd46e;
+        font-weight: bold;
+        background: rgba(255, 212, 110, 0.15);
+        padding: 2px 7px;
+        border-radius: 10px;
+        font-size: 12px;
+      }
+      .time {
+        color: #888;
+        font-size: 11px;
+      }
+      .empty {
+        padding: 25px;
+        text-align: center;
+        color: #bbb;
+      }
+      @media (max-width: 768px) {
+        .app {
+          width: 100%;
+          padding: 8px;
+          border: 0;
+        }
+        .header {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        nav {
+          gap: 10px;
+        }
+        nav a {
+          font-size: 11px;
+        }
+        .grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+        #similar .card:nth-child(4) {
+          display: flex;
+        }
+        .post {
+          grid-template-columns: 1fr;
+        }
+        .post img {
+          height: 260px;
+          min-height: 0;
+        }
+        .star {
+          font-size: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <a class="brand" href="index.html"
+          ><img src="images/logo.jpg" alt="SmartFlea" /></a
+        >
+        <nav>
+          <a href="index.html">HOME</a>
+          <a href="doct.html" class="active">RECOMMENDED</a>
+          <a href="views/about.html">CHATS</a>
+          <span data-account-nav><a href="views/login.html">LOG IN</a></span>
+        </nav>
+      </header>
+      <main>
+        <!-- Recommended feed: always multiple of 3 (completed rows like Instagram explore) -->
+        <section id="feed" class="feed">
+          <h1 class="title">RECOMMENDED</h1>
+          <div id="grid" class="grid"></div>
+        </section>
+
+        <!-- Post Detail view -->
+        <section id="detail" class="detail" hidden>
+          <button id="back" class="btn back" type="button">← BACK TO RECOMMENDED</button>
+          
+          <!-- Post Details (Overall rating remains here in info card) -->
+          <article id="post" class="post"></article>
+
+          <!-- Similar Recommended Posts: 3 matching items (1 complete row of 3) -->
+          <section class="similar">
+            <h2 class="title">SIMILAR FOR YOU</h2>
+            <div id="similar" class="grid"></div>
+          </section>
+
+          <!-- Comments & Rating -->
+          <section class="comments">
+            <h2 class="title">COMMENTS</h2>
+
+            <!-- Rating stars and Confirm rating button moved above comment input -->
+            <div class="user-rating-box">
+              <div id="stars" class="stars">
+                <button type="button" class="star" data-star="1" aria-label="1 star">★</button>
+                <button type="button" class="star" data-star="2" aria-label="2 stars">★</button>
+                <button type="button" class="star" data-star="3" aria-label="3 stars">★</button>
+                <button type="button" class="star" data-star="4" aria-label="4 stars">★</button>
+                <button type="button" class="star" data-star="5" aria-label="5 stars">★</button>
+              </div>
+              <button id="save-rating" type="button" class="btn btn-confirm">Confirm rating</button>
+              <p id="rating-note" class="stats"></p>
+            </div>
+
+            <!-- Comment submission form -->
+            <form id="comment-form" class="comment-form">
+              <textarea id="comment" placeholder="Write a comment…"></textarea>
+              <button class="btn" type="submit">Submit</button>
+            </form>
+            <div id="comment-list"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import {
+        auth,
+        db,
+        doc,
+        getDoc,
+        setDoc,
+        collection,
+        addDoc,
+        deleteDoc,
+        getDocs,
+        query,
+        orderBy,
+        onSnapshot,
+        serverTimestamp,
+        onAuthStateChanged,
+      } from "./firebase.js";
+      import { attachAccountNav } from "./account-nav.js";
+
+      attachAccountNav("");
+
+      const $ = (s) => document.querySelector(s);
+      const esc = (s) =>
+        String(s || "").replace(
+          /[&<>]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+        );
+
+      let user = null;
+      let profile = null;
+      let posts = [];
+      let current = null;
+      let rating = 0;
+      let stopComments = null;
+      let stopRatings = null;
+
+      const fallbackPosts = [
+        {
+          id: "test1",
+          title: "Xiaomi 14 Ultra",
+          imageUrl: "images/E1.jpg",
+          description: "Camera-focused flagship phone with Leica quad-camera setup and ultra-dynamic sensors.",
+          keywords: ["phone", "camera", "android", "flagship"],
+        },
+        {
+          id: "test4",
+          title: "iPhone Air",
+          imageUrl: "images/E2.jpg",
+          description: "Ultra-thin lightweight smartphone with exceptional titanium build and Apple Intelligence.",
+          keywords: ["phone", "apple", "ios", "flagship"],
+        },
+        {
+          id: "test3",
+          title: "Google Pixel",
+          imageUrl: "images/E3.jpg",
+          description: "Clean Android experience, next-generation Tensor chip, smart AI photography.",
+          keywords: ["phone", "camera", "android", "google"],
+        },
+        {
+          id: "test2",
+          title: "Samsung Fold",
+          imageUrl: "images/E4.jpg",
+          description: "Foldable phone for multitasking with expansive dynamic AMOLED display.",
+          keywords: ["phone", "foldable", "android", "samsung"],
+        },
+        {
+          id: "test5",
+          title: "Huawei Trifold",
+          imageUrl: "images/E5.jpg",
+          description: "Innovative dual-hinge tri-fold screen converting effortlessly to a 10-inch display.",
+          keywords: ["phone", "foldable", "trifold", "huawei"],
+        },
+        {
+          id: "test6",
+          title: "Motorola Razr",
+          imageUrl: "images/E6.jpg",
+          description: "Iconic flip phone design with large external interactive screen.",
+          keywords: ["phone", "flip", "foldable", "android"],
+        },
+        {
+          id: "test7",
+          title: "Nothing Phone",
+          imageUrl: "images/E7.jpg",
+          description: "Unique transparent back design with glyph lighting and clean Nothing OS.",
+          keywords: ["phone", "design", "android", "nothing"],
+        },
+        {
+          id: "test8",
+          title: "Honor Magic",
+          imageUrl: "images/E8.jpg",
+          description: "Ultra-thin foldable with advanced silicon-carbon battery technology.",
+          keywords: ["phone", "foldable", "android", "honor"],
+        },
+        {
+          id: "test9",
+          title: "OnePlus 9",
+          imageUrl: "images/E9.jpg",
+          description: "Elite flagship speed, Snapdragon 8 Elite, and Hasselblad imaging system.",
+          keywords: ["phone", "performance", "android", "oneplus"],
+        },
+      ];
+
+      const defaultSeedRatings = {
+        test1: [5, 5, 5, 4, 5, 4],
+        test2: [4, 5, 4, 4, 5],
+        test3: [5, 5, 4, 5, 5],
+        test4: [5, 5, 5, 5, 4],
+        test5: [5, 4, 5, 5, 5],
+        test6: [4, 4, 5, 4, 4],
+        test7: [4, 4, 5, 5, 4],
+        test8: [5, 4, 4, 5, 4],
+        test9: [5, 5, 5, 5, 5],
+      };
+
+      onAuthStateChanged(auth, async (u) => {
+        user = u;
+        try {
+          profile = u ? (await getDoc(doc(db, "users", u.uid))).data() : null;
+        } catch {
+          profile = null;
+        }
+        await loadPosts();
+      });
+
+      function normalizeKeywords(kws) {
+        if (Array.isArray(kws)) {
+          return kws.map((k) => String(k).trim().toLowerCase()).filter(Boolean);
+        }
+        if (typeof kws === "string") {
+          return kws.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
+        }
+        return [];
+      }
+
+      function getSimilarPosts(currentPost, allPosts, maxCount = 4) {
+        const currentKws = normalizeKeywords(currentPost.keywords);
+        // Include both loaded posts and fallbackPosts to ensure ample candidates
+        const pool = [
+          ...allPosts,
+          ...fallbackPosts.filter((fb) => !allPosts.some((p) => p.id === fb.id)),
+        ];
+        const candidates = pool.filter((p) => p.id !== currentPost.id);
+
+        return [...candidates]
+          .sort((a, b) => {
+            const aKws = normalizeKeywords(a.keywords);
+            const bKws = normalizeKeywords(b.keywords);
+
+            // Count keyword matches with current post
+            const aMatches = aKws.filter((k) => currentKws.includes(k)).length;
+            const bMatches = bKws.filter((k) => currentKws.includes(k)).length;
+
+            if (bMatches !== aMatches) {
+              return bMatches - aMatches; // More matches first!
+            }
+
+            // Real admin posts take priority over scripted fallback posts
+            const aIsTest = String(a.id).startsWith("test");
+            const bIsTest = String(b.id).startsWith("test");
+            if (aIsTest !== bIsTest) {
+              return aIsTest ? 1 : -1;
+            }
+
+            return 0;
+          })
+          .slice(0, maxCount);
+      }
+
+      function renderCards(list, targetEl) {
+        targetEl.innerHTML =
+          list
+            .map((p) => {
+              const kws = normalizeKeywords(p.keywords);
+              return `
+          <button class="card" data-post="${p.id}" type="button">
+            <img src="${p.imageUrl}" alt="${esc(p.title)}">
+            <strong>${esc(p.title)}</strong>
+            <small>${esc(kws.slice(0, 3).join(" · ") || "recommendation")}</small>
+          </button>
+        `;
+            })
+            .join("") || '<p class="empty">No posts yet.</p>';
+      }
+
+      async function loadPosts() {
+        try {
+          const snap = await getDocs(collection(db, "posts"));
+          const dbPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+          let displayPosts = [...dbPosts];
+
+          // If fewer than 6, fill with fallback posts so there are at least 6
+          if (displayPosts.length < 6) {
+            const needed = 6 - displayPosts.length;
+            const fillers = fallbackPosts
+              .filter((f) => !displayPosts.some((p) => p.id === f.id))
+              .slice(0, needed);
+            displayPosts = [...displayPosts, ...fillers];
+          }
+
+          // Rule: MUST ALWAYS BE A MULTIPLE OF 3 (3 in each row, complete rows)
+          if (displayPosts.length % 3 !== 0) {
+            const padNeeded = 3 - (displayPosts.length % 3);
+            const extraFillers = fallbackPosts
+              .filter((f) => !displayPosts.some((p) => p.id === f.id))
+              .slice(0, padNeeded);
+
+            if (extraFillers.length === padNeeded) {
+              displayPosts = [...displayPosts, ...extraFillers];
+            } else {
+              displayPosts = displayPosts.slice(
+                0,
+                Math.floor(displayPosts.length / 3) * 3,
+              );
+            }
+          }
+
+          posts = displayPosts;
+        } catch (e) {
+          console.warn("Firestore unavailable, using fallback posts:", e);
+          posts = fallbackPosts.slice(0, 9); // 3x3 = 9
+        }
+
+        renderCards(posts, $("#grid"));
+
+        // Check if opened with ?post=...
+        const urlPostId = new URLSearchParams(window.location.search).get("post");
+        if (urlPostId) {
+          openPost(urlPostId);
+        }
+      }
+
+      function renderStars(hoverVal = 0) {
+        const activeStar = hoverVal || rating;
+        const starBtns = $("#stars").querySelectorAll(".star");
+        starBtns.forEach((btn) => {
+          const val = Number(btn.dataset.star);
+          if (val <= activeStar) {
+            btn.classList.add("selected");
+          } else {
+            btn.classList.remove("selected");
+          }
+        });
+      }
+
+      function loadUserRatingForCurrentPost() {
+        if (!current) return;
+        const localKey = `smartflea-ratings-${current.id}`;
+        const localRatings = JSON.parse(localStorage.getItem(localKey) || "{}");
+        const voterKey = user ? user.uid : "local_user";
+        if (typeof localRatings[voterKey] === "number") {
+          rating = localRatings[voterKey];
+          renderStars();
+          $("#rating-note").textContent = `Your saved rating: ${rating}/5`;
+        } else {
+          rating = 0;
+          renderStars();
+          $("#rating-note").textContent = "";
+        }
+      }
+
+      async function openPost(id) {
+        current =
+          posts.find((p) => p.id === id) ||
+          fallbackPosts.find((p) => p.id === id);
+
+        if (!current) {
+          try {
+            const snap = await getDoc(doc(db, "posts", id));
+            if (snap.exists()) {
+              current = { id: snap.id, ...snap.data() };
+              posts.push(current);
+            }
+          } catch (e) {
+            console.warn("Could not fetch post from Firestore:", e);
+          }
+        }
+
+        if (!current) {
+          console.warn("Post not found:", id);
+          return;
+        }
+
+        const kws = normalizeKeywords(current.keywords);
+        const kwHtml = kws.length
+          ? kws.map((k) => `<span class="kw-tag">${esc(k)}</span>`).join(" ")
+          : '<span style="color:#777;">none</span>';
+
+        // Post info: post rating summary stays here in the post card
+        $("#post").innerHTML = `
+          <img src="${current.imageUrl}" alt="${esc(current.title)}">
+          <div class="info">
+            <h1>${esc(current.title)}</h1>
+            <p>${esc(current.description || "")}</p>
+            <p class="keywords">Keywords: ${kwHtml}</p>
+            <div class="post-rating-summary">
+              <h2>RATING</h2>
+              <div id="stats-stars" class="avg-stars">☆☆☆☆☆</div>
+              <p id="stats" class="stats">Loading ratings…</p>
+            </div>
+          </div>
+        `;
+
+        // Render similar recommended posts (3 items on desktop 1x3, 4 items on mobile 2x2)
+        const similarPosts = getSimilarPosts(current, posts, 4);
+        renderCards(similarPosts, $("#similar"));
+
+        // Setup user rating above comments
+        loadUserRatingForCurrentPost();
+
+        $("#feed").hidden = true;
+        $("#detail").hidden = false;
+
+        listenRatings();
+        listenComments();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function updateRatingDisplay(firestoreDocs = null) {
+        if (!current) return;
+        const localKey = `smartflea-ratings-${current.id}`;
+        let localRatings = {};
+        try {
+          localRatings = JSON.parse(localStorage.getItem(localKey) || "{}");
+        } catch {
+          localRatings = {};
+        }
+
+        const ratingMap = new Map();
+
+        // 1. Add seeds if any
+        const seeds = defaultSeedRatings[current.id] || [];
+        seeds.forEach((val, idx) => {
+          ratingMap.set(`seed_${idx}`, val);
+        });
+
+        // 2. Add Firestore ratings if available
+        if (firestoreDocs && firestoreDocs.length) {
+          ratingMap.clear();
+          firestoreDocs.forEach((d) => {
+            if (typeof d.value === "number") {
+              const key = d.userId || d.id || Math.random();
+              ratingMap.set(key, d.value);
+            }
+          });
+        }
+
+        // 3. Always include local rating for this device/user so vote is immediately reflected
+        Object.entries(localRatings).forEach(([key, val]) => {
+          if (typeof val === "number") {
+            ratingMap.set(key, val);
+          }
+        });
+
+        const values = Array.from(ratingMap.values());
+        const avgStarsEl = $("#stats-stars");
+        const statsEl = $("#stats");
+        if (!statsEl || !avgStarsEl) return;
+
+        if (values.length) {
+          const average = values.reduce((a, b) => a + b, 0) / values.length;
+          const rounded = Math.round(average);
+          avgStarsEl.innerHTML = [1, 2, 3, 4, 5]
+            .map((n) => `<span class="${n <= rounded ? "star-filled" : "dim"}">★</span>`)
+            .join("");
+          statsEl.textContent = `Average rating: ${average.toFixed(1)} / 5 · ${values.length} ${values.length === 1 ? "vote" : "votes"}`;
+        } else {
+          avgStarsEl.innerHTML = [1, 2, 3, 4, 5]
+            .map(() => `<span class="dim">★</span>`)
+            .join("");
+          statsEl.textContent = "No ratings yet";
+        }
+      }
+
+      function listenRatings() {
+        if (stopRatings) stopRatings();
+        loadUserRatingForCurrentPost();
+
+        if (current.id.startsWith("test")) {
+          updateRatingDisplay();
+          return;
+        }
+
+        try {
+          stopRatings = onSnapshot(
+            collection(db, "posts", current.id, "ratings"),
+            (snap) => {
+              const firestoreDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+              if (user) {
+                const userDoc = firestoreDocs.find((d) => d.id === user.uid || d.userId === user.uid);
+                if (userDoc && typeof userDoc.value === "number") {
+                  rating = userDoc.value;
+                  renderStars();
+                  $("#rating-note").textContent = `Your saved rating: ${rating}/5`;
+                }
+              }
+
+              updateRatingDisplay(firestoreDocs);
+            },
+            (err) => {
+              console.warn("Ratings snapshot fallback to local:", err);
+              updateRatingDisplay();
+            },
+          );
+        } catch {
+          updateRatingDisplay();
+        }
+      }
+
+      function renderCommentsList(items) {
+        $("#comment-list").innerHTML =
+          items
+            .map((c) => {
+              const isAuthor = user && c.authorId === user.uid;
+              const isAdmin = profile?.role === "admin";
+              const canDelete = isAuthor || isAdmin || c.authorId === "local_user";
+              const timeDisplay =
+                c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString() : c.createdAtStr || "just now";
+              return `
+              <article class="comment">
+                <b>${esc(c.authorName || "User")}</b>
+                ${isAdmin && !isAuthor ? `<span style="font-size:10px;background:#7b3030;padding:2px 7px;border-radius:10px;margin-left:6px;border:1px solid #ff7777;">Admin</span>` : ""}
+                ${typeof c.rating === "number" ? `<span class="score">★ ${c.rating}/5</span>` : ""}
+                ${canDelete ? `<button class="btn danger" data-delete-comment="${c.id}" type="button" title="${isAdmin && !isAuthor ? "Delete violating comment as admin" : "Delete comment"}">Delete</button>` : ""}
+                <br>${esc(c.text)}
+                <br><span class="time">${timeDisplay}</span>
+              </article>
+            `;
+            })
+            .join("") || '<p class="empty">No comments yet.</p>';
+      }
+
+      function listenComments() {
+        if (stopComments) stopComments();
+        const localKey = `smartflea-comments-${current.id}`;
+        const getLocalComments = () => {
+          try {
+            return JSON.parse(localStorage.getItem(localKey) || "[]");
+          } catch {
+            return [];
+          }
+        };
+
+        if (current.id.startsWith("test")) {
+          renderCommentsList(getLocalComments());
+          return;
+        }
+
+        try {
+          stopComments = onSnapshot(
+            collection(db, "posts", current.id, "comments"),
+            (snap) => {
+              const fsItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+              fsItems.sort((a, b) => {
+                const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.timestamp || 0);
+                const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.timestamp || 0);
+                return ta - tb;
+              });
+
+              const localList = getLocalComments();
+              const merged = [
+                ...fsItems,
+                ...localList.filter((lc) => !fsItems.some((fc) => fc.id === lc.id)),
+              ];
+              renderCommentsList(merged);
+            },
+            (err) => {
+              console.warn("Comments snapshot fallback to local:", err);
+              renderCommentsList(getLocalComments());
+            },
+          );
+        } catch {
+          renderCommentsList(getLocalComments());
+        }
+      }
+
+      // Star hover effects
+      const starsBox = $("#stars");
+      starsBox.addEventListener("mouseover", (e) => {
+        const starBtn = e.target.closest("[data-star]");
+        if (starBtn) {
+          renderStars(Number(starBtn.dataset.star));
+        }
+      });
+      starsBox.addEventListener("mouseleave", () => {
+        renderStars(0);
+      });
+
+      // Click handling
+      document.addEventListener("click", async (e) => {
+        const cardBtn = e.target.closest("[data-post]");
+        if (cardBtn) {
+          const postId = cardBtn.dataset.post;
+          history.pushState(null, "", `doct.html?post=${postId}`);
+          await openPost(postId);
+          return;
+        }
+
+        const starBtn = e.target.closest("[data-star]");
+        if (starBtn) {
+          rating = Number(starBtn.dataset.star);
+          renderStars();
+          $("#rating-note").textContent = `Selected: ${rating}/5. Click "Confirm rating" to save.`;
+          return;
+        }
+
+        const deleteBtn = e.target.closest("[data-delete-comment]");
+        if (deleteBtn && current) {
+          const commentId = deleteBtn.dataset.deleteComment;
+          if (confirm("Delete this comment?")) {
+            const localKey = `smartflea-comments-${current.id}`;
+            let list = [];
+            try {
+              list = JSON.parse(localStorage.getItem(localKey) || "[]");
+            } catch {
+              list = [];
+            }
+            list = list.filter((c) => c.id !== commentId);
+            localStorage.setItem(localKey, JSON.stringify(list));
+
+            if (current.id.startsWith("test") || commentId.startsWith("c_")) {
+              listenComments();
+            } else {
+              try {
+                await deleteDoc(doc(db, "posts", current.id, "comments", commentId));
+              } catch (err) {
+                console.warn("Could not delete comment from Firestore:", err);
+              }
+              listenComments();
+            }
+          }
+        }
+      });
+
+      // Confirm rating button
+      $("#save-rating").onclick = async () => {
+        if (!current) return;
+        if (!rating) {
+          $("#rating-note").textContent = "Choose 1–5 stars first.";
+          return;
+        }
+
+        const localKey = `smartflea-ratings-${current.id}`;
+        let localRatings = {};
+        try {
+          localRatings = JSON.parse(localStorage.getItem(localKey) || "{}");
+        } catch {
+          localRatings = {};
+        }
+        const voterKey = user ? user.uid : "local_user";
+        localRatings[voterKey] = rating;
+        localStorage.setItem(localKey, JSON.stringify(localRatings));
+
+        $("#rating-note").textContent = `Your rating saved: ${rating}/5`;
+
+        if (user && !current.id.startsWith("test")) {
+          try {
+            await setDoc(doc(db, "posts", current.id, "ratings", user.uid), {
+              value: rating,
+              userId: user.uid,
+              updatedAt: serverTimestamp(),
+            });
+          } catch (e) {
+            console.warn("Firestore rating save fallback to local:", e);
+          }
+        }
+
+        updateRatingDisplay();
+      };
+
+      // Comment submission form
+      $("#comment-form").onsubmit = async (e) => {
+        e.preventDefault();
+        const text = $("#comment").value.trim();
+        if (!text || !current) return;
+
+        const authorName =
+          profile?.name ||
+          profile?.fullName ||
+          (user ? user.displayName || user.email?.split("@")[0] : "Guest");
+        const authorId = user ? user.uid : "local_user";
+
+        const localKey = `smartflea-comments-${current.id}`;
+        const saveLocal = () => {
+          let list = [];
+          try {
+            list = JSON.parse(localStorage.getItem(localKey) || "[]");
+          } catch {
+            list = [];
+          }
+          list.push({
+            id: "c_" + Date.now(),
+            authorId,
+            authorName,
+            text,
+            rating: rating || null,
+            createdAtStr: new Date().toLocaleString(),
+          });
+          localStorage.setItem(localKey, JSON.stringify(list));
+          return list;
+        };
+
+        if (current.id.startsWith("test")) {
+          const list = saveLocal();
+          $("#comment").value = "";
+          renderCommentsList(list);
+          return;
+        }
+
+        if (user) {
+          try {
+            await addDoc(collection(db, "posts", current.id, "comments"), {
+              authorId,
+              authorName,
+              text,
+              rating: rating || null,
+              createdAt: serverTimestamp(),
+            });
+            $("#comment").value = "";
+          } catch (err) {
+            console.warn("Firestore comment write failed, saving locally:", err);
+            saveLocal();
+            $("#comment").value = "";
+            listenComments();
+          }
+        } else {
+          saveLocal();
+          $("#comment").value = "";
+          listenComments();
+        }
+      };
+
+      // Back button
+      $("#back").onclick = () => {
+        if (stopComments) stopComments();
+        if (stopRatings) stopRatings();
+        $("#detail").hidden = true;
+        $("#feed").hidden = false;
+        history.pushState(null, "", "doct.html");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+
+      // Browser forward/back button navigation
+      window.onpopstate = () => {
+        const urlPostId = new URLSearchParams(window.location.search).get("post");
+        if (urlPostId) {
+          openPost(urlPostId);
+        } else {
+          $("#detail").hidden = true;
+          $("#feed").hidden = false;
+        }
+      };
+    </script>
+  </body>
+</html>

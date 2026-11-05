@@ -45,8 +45,18 @@ service cloud.firestore {
     }
 
     match /chats/{chatId} {
-      allow read, create: if signedIn() && request.auth.uid in request.resource.data.members;
-      allow update: if signedIn() && request.auth.uid in resource.data.members;
+      // `resource` exists for existing chats; `request.resource` exists only
+      // while creating a new chat. They cannot safely share one rule.
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.members;
+      // A direct-chat member may update message metadata. Group membership is
+      // changed only by the account that created the group.
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.members
+        && (
+          resource.data.type != 'group'
+          || resource.data.ownerId == request.auth.uid
+        );
       match /messages/{messageId} {
         allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members;
         allow create: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.members && request.resource.data.senderId == request.auth.uid;

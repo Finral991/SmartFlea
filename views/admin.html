@@ -1,67 +1,552 @@
-<<<<<<< HEAD
-<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VeilSide — Admin</title><style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#000 url('../images/RSP.gif') repeat;color:#fff;font:15px Arial,sans-serif}.app{width:min(96vw,1240px);min-height:100vh;margin:auto;padding:14px;background:rgba(0,0,0,.94);border-left:2px solid #fff;border-right:2px solid #fff}.header{display:flex;align-items:center;gap:10px;padding:5px 9px;border:2px solid #fff}.brand{display:flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-weight:bold}.brand img{width:47px;height:35px;object-fit:cover}nav{margin-left:auto;display:flex;gap:18px}nav a{color:#fff;text-decoration:none;font-size:12px;font-weight:bold}.notice{margin:18px 0;padding:10px;border:1px solid #b9e2de;color:#b9e2de}.layout{display:grid;grid-template-columns:minmax(300px,1fr) minmax(350px,1fr);gap:15px}.panel{padding:15px;border:2px solid #fff;background:#080808}.panel h1,.panel h2{margin:0 0 14px;font-size:20px}.field{display:grid;gap:4px;margin:9px 0;font-size:12px;font-weight:bold}.field input,.field textarea{width:100%;border:2px solid #fff;border-radius:12px;background:#666;color:#fff;padding:7px 10px;font:inherit}.field textarea{min-height:74px;resize:vertical}.button{padding:6px 12px;border:1px solid #fff;border-radius:14px;background:#777;color:#fff;font-weight:bold;cursor:pointer}.button:hover{background:#999}.danger{background:#653737}.post-list,.user-list{display:grid;gap:8px;margin-top:14px;max-height:470px;overflow:auto}.row{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;padding:9px;border:1px solid #777}.row strong,.row small{display:block}.row small{color:#ccc;margin-top:3px}.actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}.message{min-height:20px;color:#b9e2de}@media(max-width:760px){.app{width:100%;border:0;padding:8px}.layout{grid-template-columns:1fr}nav{gap:8px}nav a{font-size:9px}}
-</style></head><body><div class="app"><header class="header"><a class="brand" href="../index.html"><img src="../images/logo.jpg">VEILSIDE</a><nav><a href="../index.html">HOME</a><a href="../doct.html">RECOMMENDED</a><a href="about.html">CHATS</a><a href="profile.html">PROFILE</a></nav></header><p id="notice" class="notice">Checking administrator access…</p><main id="admin" class="layout" hidden><section class="panel"><h1>POSTS</h1><form id="post-form"><input id="post-id" type="hidden"><label class="field">Title<input id="title" required></label><label class="field">Image URL<input id="image" type="url" required placeholder="https://…"></label><label class="field">Description<textarea id="description" required></textarea></label><label class="field">Keywords — comma-separated<input id="keywords" required placeholder="phone, camera, android"></label><button class="button" type="submit">Save post</button><button id="cancel-edit" class="button" type="button" hidden>Cancel</button><p id="post-message" class="message"></p></form><div id="post-list" class="post-list"></div></section><section class="panel"><h2>USERS</h2><p class="message">Only administrators can change roles or remove users.</p><div id="user-list" class="user-list"></div></section></main></div><script type="module">import {auth,db,doc,getDoc,updateDoc,serverTimestamp,onAuthStateChanged,collection,addDoc,deleteDoc,getDocs,query,orderBy} from '../firebase.js';const $=s=>document.querySelector(s);let me,posts=[];const esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));onAuthStateChanged(auth,async user=>{if(!user){location.href='login.html';return}me=user;const mine=await getDoc(doc(db,'users',user.uid));if(!mine.exists()||mine.data().role!=='admin'){$('#notice').textContent='Access denied. This page is only for administrators.';return}$('#notice').hidden=true;$('#admin').hidden=false;loadPosts();loadUsers()});async function loadPosts(){const snap=await getDocs(query(collection(db,'posts'),orderBy('createdAt','desc')));posts=snap.docs.map(d=>({id:d.id,...d.data()}));$('#post-list').innerHTML=posts.map(p=>`<div class="row"><span><strong>${esc(p.title)}</strong><small>${esc((p.keywords||[]).join(', '))}</small></span><span class="actions"><button class="button" data-edit="${p.id}">Edit</button><button class="button danger" data-delete-post="${p.id}">Delete</button></span></div>`).join('')||'<small>No posts yet.</small>'}async function loadUsers(){const snap=await getDocs(collection(db,'users'));$('#user-list').innerHTML=snap.docs.map(d=>{const u=d.data();return `<div class="row"><span><strong>${esc(u.name||u.fullName)}</strong><small>@${esc(u.username)} · ${esc(u.role||'user')}</small></span><span class="actions">${d.id===me.uid?'':`<button class="button" data-role="${d.id}" data-next="${u.role==='admin'?'user':'admin'}">Make ${u.role==='admin'?'user':'admin'}</button><button class="button danger" data-delete-user="${d.id}">Remove</button>`}</span></div>`}).join('')}$('#post-form').onsubmit=async e=>{e.preventDefault();const id=$('#post-id').value,payload={title:$('#title').value.trim(),imageUrl:$('#image').value.trim(),description:$('#description').value.trim(),keywords:$('#keywords').value.split(',').map(k=>k.trim().toLowerCase()).filter(Boolean),updatedAt:serverTimestamp(),authorId:me.uid};try{if(id)await updateDoc(doc(db,'posts',id),payload);else await addDoc(collection(db,'posts'),{...payload,createdAt:serverTimestamp()});$('#post-form').reset();$('#post-id').value='';$('#cancel-edit').hidden=true;$('#post-message').textContent='Saved.';loadPosts()}catch(e){$('#post-message').textContent=`Could not save: ${e.code||'error'}`}};document.addEventListener('click',async e=>{const edit=e.target.dataset.edit,del=e.target.dataset.deletePost,role=e.target.dataset.role,user=e.target.dataset.deleteUser;if(edit){const p=posts.find(x=>x.id===edit);$('#post-id').value=p.id;$('#title').value=p.title;$('#image').value=p.imageUrl;$('#description').value=p.description;$('#keywords').value=(p.keywords||[]).join(', ');$('#cancel-edit').hidden=false;scrollTo({top:0,behavior:'smooth'})}if(del&&confirm('Delete this post?')){await deleteDoc(doc(db,'posts',del));loadPosts()}if(role){await updateDoc(doc(db,'users',role),{role:e.target.dataset.next,updatedAt:serverTimestamp()});loadUsers()}if(user&&confirm('Remove this user profile? Their Firebase login is not deleted.')){await deleteDoc(doc(db,'users',user));loadUsers()}});$('#cancel-edit').onclick=()=>{$('#post-form').reset();$('#post-id').value='';$('#cancel-edit').hidden=true}</script></body></html>
-````
-=======
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Admin</title>
-  <link href="https://getbootstrap.com/docs/4.4/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-image: url('/images/R.jpg');
-      background-size: cover;
-      color: white;
-    }
-    .container {
-      background-color: rgba(0,0,0,0.7);
-      margin-top: 100px;
-      padding: 20px;
-      border-radius: 10px;
-    }
-    table {
-      background-color: white;
-      color: black;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Subscribers</h1>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Email</th>
-        </tr>
-      </thead>
-      <tbody id="subscribersTable"></tbody>
-    </table>
-    <a href="login.html" class="btn btn-warning">Sign Out</a>
-  </div>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SmartFlea — Admin</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background-color: #07080a;
+        background-image:
+          radial-gradient(circle at 50% 0%, rgba(78, 205, 196, 0.09) 0%, transparent 55%),
+          radial-gradient(circle at 100% 100%, rgba(31, 80, 73, 0.12) 0%, transparent 50%),
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+        background-attachment: fixed;
+        color: #fff;
+        font: 15px Arial, sans-serif;
+      }
+      .app {
+        width: min(96vw, 1240px);
+        min-height: 100vh;
+        margin: auto;
+        padding: 16px;
+        background: rgba(10, 10, 12, 0.95);
+        border-left: 2px solid rgba(255, 255, 255, 0.85);
+        border-right: 2px solid rgba(255, 255, 255, 0.85);
+        box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 7px 12px;
+        border: 2px solid #fff;
+        border-radius: 8px;
+        background: rgba(20, 20, 24, 0.7);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      .brand img {
+        width: 120px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+      nav {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: clamp(10px, 1.6vw, 24px);
+        margin-left: auto;
+        white-space: nowrap;
+        align-items: center;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        font-size: clamp(11px, 0.95vw, 13px);
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        transition: color 0.15s ease;
+      }
+      nav a:hover {
+        color: #4ecdc4;
+      }
+      .notice {
+        margin: 16px 0;
+        padding: 10px;
+        border: 1px solid #b9e2de;
+        color: #b9e2de;
+        border-radius: 6px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .panel {
+        padding: 16px;
+        border: 2px solid #fff;
+        background: #090909;
+        border-radius: 8px;
+      }
+      .panel h1,
+      .panel h2 {
+        margin: 0 0 14px;
+        font-size: 20px;
+        letter-spacing: 0.5px;
+      }
+      .field {
+        display: grid;
+        gap: 4px;
+        margin: 10px 0;
+        font-size: 13px;
+        font-weight: bold;
+      }
+      .field input,
+      .field textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #fff;
+        border-radius: 10px;
+        background: #444;
+        color: #fff;
+        font: inherit;
+      }
+      .field textarea {
+        min-height: 76px;
+        resize: vertical;
+      }
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .button {
+        padding: 6px 14px;
+        border: 1px solid #fff;
+        border-radius: 14px;
+        background: #777;
+        color: #fff;
+        font-weight: bold;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.15s ease, opacity 0.15s ease;
+      }
+      .button:hover {
+        opacity: 0.88;
+      }
+      .edit-btn {
+        background: #28a745;
+        border-color: #28a745;
+      }
+      .edit-btn:hover {
+        background: #218838;
+      }
+      .danger {
+        background: #dc3545;
+        border-color: #dc3545;
+      }
+      .danger:hover {
+        background: #c82333;
+      }
+      .cancel-btn {
+        background: #555;
+        border-color: #aaa;
+      }
+      .list {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+        max-height: 480px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      .list::-webkit-scrollbar {
+        width: 6px;
+      }
+      .list::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 4px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid #555;
+        border-radius: 6px;
+        background: #141414;
+      }
+      .row-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .row-info strong {
+        display: block;
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .row-info small {
+        display: block;
+        color: #aaa;
+        font-size: 11px;
+        margin-top: 3px;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .status-msg {
+        min-height: 20px;
+        margin-top: 8px;
+        color: #b9e2de;
+        font-size: 13px;
+      }
+      @media (max-width: 768px) {
+        .app {
+          width: 100%;
+          border: 0;
+          padding: 8px;
+        }
+        .header {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        nav {
+          gap: 10px;
+        }
+        nav a {
+          font-size: 11px;
+        }
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        .row {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+        }
+        .actions {
+          width: 100%;
+          justify-content: flex-end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <a class="brand" href="../index.html"
+          ><img src="../images/logo.jpg" alt="SmartFlea" /></a
+        >
+        <nav>
+          <a href="../index.html">HOME</a>
+          <a href="../doct.html">RECOMMENDED</a>
+          <a href="about.html">CHATS</a>
+          <a href="profile.html">PROFILE</a>
+        </nav>
+      </header>
 
-  <script>
-    if (localStorage.getItem('authorized') !== 'true') {
-  window.location.href = 'login.html';
-}
+      <p id="notice" class="notice">Checking admin access…</p>
 
-const users = JSON.parse(localStorage.getItem('users') || '[]');
-const tbody = document.getElementById('subscribersTable');
-users.forEach((user, i) => {
-  const row = document.createElement('tr');
-  row.innerHTML = `
-    <td>${i + 1}</td>
-    <td>${user.email}</td>
-    <td>••••••</td>
-  `;
-  tbody.appendChild(row);
-});
+      <main id="admin" class="layout" hidden>
+        <!-- POSTS SECTION -->
+        <section class="panel">
+          <h1 id="form-heading">ADD POST</h1>
+          <form id="form">
+            <input id="post-id" type="hidden" />
+            <label class="field">
+              Title
+              <input id="title" required placeholder="Post title" />
+            </label>
+            <label class="field">
+              Image URL
+              <input id="image" type="text" required placeholder="images/E3.jpg or https://…" />
+            </label>
+            <label class="field">
+              Description
+              <textarea id="description" required placeholder="Detailed description…"></textarea>
+            </label>
+            <label class="field">
+              Keywords (comma-separated)
+              <input id="keywords" placeholder="phone, camera, android" required />
+            </label>
+            <div class="form-actions">
+              <button id="submit-btn" class="button" type="submit">Add post</button>
+              <button id="cancel-edit" class="button cancel-btn" type="button" hidden>Cancel</button>
+            </div>
+            <p id="post-msg" class="status-msg"></p>
+          </form>
 
-  </script>
-</body>
+          <h2>EXISTING POSTS</h2>
+          <div id="posts" class="list"></div>
+        </section>
+
+        <!-- USERS SECTION -->
+        <section class="panel">
+          <h1>USERS</h1>
+          <p class="status-msg">Manage registered users, their roles, or remove accounts.</p>
+          <div id="users" class="list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import {
+        auth,
+        db,
+        doc,
+        getDoc,
+        updateDoc,
+        serverTimestamp,
+        onAuthStateChanged,
+        collection,
+        addDoc,
+        deleteDoc,
+        getDocs,
+        query,
+        orderBy,
+      } from "../firebase.js";
+
+      const $ = (s) => document.querySelector(s);
+      const esc = (s) =>
+        String(s || "").replace(
+          /[&<>]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+        );
+
+      let me;
+      let loadedPosts = [];
+
+      onAuthStateChanged(auth, async (u) => {
+        if (!u) {
+          $("#notice").textContent = "Sign in through Profile first.";
+          return;
+        }
+        me = u;
+        try {
+          const mine = await getDoc(doc(db, "users", u.uid));
+          if (mine.data()?.role !== "admin") {
+            $("#notice").textContent =
+              "Access denied — set your user role to admin in Firestore.";
+            return;
+          }
+        } catch {
+          $("#notice").textContent = "Could not verify admin access.";
+          return;
+        }
+
+        $("#notice").hidden = true;
+        $("#admin").hidden = false;
+        loadPosts();
+        loadUsers();
+      });
+
+      async function loadPosts() {
+        try {
+          const snap = await getDocs(
+            query(collection(db, "posts"), orderBy("createdAt", "desc")),
+          );
+          loadedPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        } catch {
+          // If query with orderBy fails (e.g. index pending), fetch without order
+          const snap = await getDocs(collection(db, "posts"));
+          loadedPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        }
+
+        $("#posts").innerHTML = loadedPosts.length
+          ? loadedPosts
+              .map(
+                (p) => `
+              <div class="row">
+                <div class="row-info">
+                  <strong>${esc(p.title)}</strong>
+                  <small>Keywords: ${esc((p.keywords || []).join(", ") || "none")}</small>
+                </div>
+                <div class="actions">
+                  <button class="button edit-btn" data-edit-post="${p.id}" type="button">Edit</button>
+                  <button class="button danger" data-delete-post="${p.id}" type="button">Delete</button>
+                </div>
+              </div>
+            `,
+              )
+              .join("")
+          : "<p style='color:#bbb;'>No admin posts in database yet.</p>";
+      }
+
+      async function loadUsers() {
+        try {
+          const snap = await getDocs(collection(db, "users"));
+          $("#users").innerHTML = snap.docs
+            .map((d) => {
+              const u = d.data();
+              const isMe = d.id === me.uid;
+              const role = u.role || "user";
+              const nextRole = role === "admin" ? "user" : "admin";
+              return `
+              <div class="row">
+                <div class="row-info">
+                  <strong>${esc(u.name || u.fullName || "User")}</strong>
+                  <small>@${esc(u.username || "user")} · Role: <b>${esc(role)}</b></small>
+                </div>
+                <div class="actions">
+                  ${
+                    isMe
+                      ? "<span style='font-size:12px;color:#aaa;'>(You)</span>"
+                      : `
+                    <button class="button" data-user-role="${d.id}" data-next-role="${nextRole}" type="button">
+                      Make ${nextRole}
+                    </button>
+                    <button class="button danger" data-delete-user="${d.id}" data-username="${esc(u.name || u.fullName || u.username || "user")}" type="button">
+                      Delete
+                    </button>
+                  `
+                  }
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        } catch (e) {
+          $("#users").innerHTML = "<p style='color:#bbb;'>Could not load users.</p>";
+        }
+      }
+
+      // Add or Edit post form submission
+      $("#form").onsubmit = async (e) => {
+        e.preventDefault();
+        const editId = $("#post-id").value;
+        const title = $("#title").value.trim();
+        const imageUrl = $("#image").value.trim();
+        const description = $("#description").value.trim();
+        const keywords = $("#keywords")
+          .value.split(",")
+          .map((x) => x.trim().toLowerCase())
+          .filter(Boolean);
+
+        const payload = {
+          title,
+          imageUrl,
+          description,
+          keywords,
+          updatedAt: serverTimestamp(),
+          authorId: me.uid,
+        };
+
+        try {
+          if (editId) {
+            await updateDoc(doc(db, "posts", editId), payload);
+            $("#post-msg").textContent = `Post "${title}" updated successfully!`;
+          } else {
+            payload.createdAt = serverTimestamp();
+            await addDoc(collection(db, "posts"), payload);
+            $("#post-msg").textContent = `Post "${title}" added successfully!`;
+          }
+          resetForm();
+          await loadPosts();
+        } catch (err) {
+          $("#post-msg").textContent = `Error: ${err.message || err.code || "Failed to save"}`;
+        }
+      };
+
+      function resetForm() {
+        $("#form").reset();
+        $("#post-id").value = "";
+        $("#form-heading").textContent = "ADD POST";
+        $("#submit-btn").textContent = "Add post";
+        $("#cancel-edit").hidden = true;
+      }
+
+      $("#cancel-edit").onclick = () => {
+        resetForm();
+        $("#post-msg").textContent = "Edit cancelled.";
+      };
+
+      // Document click delegation for edit, delete post, user role, user delete
+      document.addEventListener("click", async (e) => {
+        // Edit post
+        const editPostId = e.target.dataset.editPost;
+        if (editPostId) {
+          const post = loadedPosts.find((p) => p.id === editPostId);
+          if (!post) return;
+          $("#post-id").value = post.id;
+          $("#title").value = post.title || "";
+          $("#image").value = post.imageUrl || "";
+          $("#description").value = post.description || "";
+          $("#keywords").value = (post.keywords || []).join(", ");
+          $("#form-heading").textContent = `EDIT POST: ${post.title}`;
+          $("#submit-btn").textContent = "Save changes";
+          $("#cancel-edit").hidden = false;
+          $("#post-msg").textContent = `Editing "${post.title}". Make changes and click "Save changes".`;
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+
+        // Delete post
+        const deletePostId = e.target.dataset.deletePost;
+        if (deletePostId) {
+          const post = loadedPosts.find((p) => p.id === deletePostId);
+          const title = post ? post.title : "this post";
+          if (confirm(`Are you sure you want to delete post "${title}"?`)) {
+            try {
+              await deleteDoc(doc(db, "posts", deletePostId));
+              if ($("#post-id").value === deletePostId) {
+                resetForm();
+              }
+              $("#post-msg").textContent = `Post "${title}" deleted.`;
+              await loadPosts();
+            } catch (err) {
+              alert(`Could not delete post: ${err.message || err.code}`);
+            }
+          }
+          return;
+        }
+
+        // Toggle user role
+        const roleUserId = e.target.dataset.userRole;
+        if (roleUserId) {
+          const nextRole = e.target.dataset.nextRole;
+          try {
+            await updateDoc(doc(db, "users", roleUserId), {
+              role: nextRole,
+              updatedAt: serverTimestamp(),
+            });
+            await loadUsers();
+          } catch (err) {
+            alert(`Could not change role: ${err.message || err.code}`);
+          }
+          return;
+        }
+
+        // Delete user
+        const deleteUserId = e.target.dataset.deleteUser;
+        if (deleteUserId) {
+          const username = e.target.dataset.username || "this user";
+          if (
+            confirm(
+              `Are you sure you want to delete user "${username}"? Their profile document will be removed.`,
+            )
+          ) {
+            try {
+              await deleteDoc(doc(db, "users", deleteUserId));
+              await loadUsers();
+            } catch (err) {
+              alert(`Could not delete user: ${err.message || err.code}`);
+            }
+          }
+          return;
+        }
+      });
+    </script>
+  </body>
 </html>
->>>>>>> 132febc4c97488c94d9e0eacaefca2cfef479bb6
