@@ -38,6 +38,12 @@ service cloud.firestore {
       allow update, delete: if signedIn() && resource.data.authorId == request.auth.uid || admin();
     }
 
+    match /posts/{postId}/ratings/{userId} {
+      allow read: if true;
+      allow create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if signedIn() && request.auth.uid == userId || admin();
+    }
+
     match /chats/{chatId} {
       allow read, create: if signedIn() && request.auth.uid in request.resource.data.members;
       allow update: if signedIn() && request.auth.uid in resource.data.members;
